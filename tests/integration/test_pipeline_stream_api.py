@@ -59,7 +59,7 @@ def test_stream_processor_degraded_dlq_dedup_and_parity(tmp_root):
     t = stream_f.index[-1]
     for col in ("t2m_lag24h", "t2m_rollmean24h", "anom_t2m", "heat_index_c", "tp_rollsum72h"):
         a, b = stream_f.loc[t, col], gold_f.loc[t, col]
-        assert abs(a - b) <= 1e-6 * max(1.0, abs(b)), col
+        assert abs(a - b) <= 1e-5 * max(1.0, abs(b)), col   # gold is stored as float32 (~1e-7 eps; heat-index polynomial amplifies)
 
 
 def test_api_endpoints(tmp_root):
