@@ -1,0 +1,28 @@
+# data (download with `make data`; never commit ERA5 or PMD files)
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+data/external/*
+!data/external/events.csv
+data/stream_in/
+*.nc
+*.grib
+*.zarr/
+models/*.pt
+models/*.json
+!models/README.md
+logs/
+results/convlstm_saliency.npy
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+.env
+# misc
+.DS_Store
+.ipynb_checkpoints/

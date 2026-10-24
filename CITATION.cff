@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "HeatFlood Sentinel: Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan"
+version: 0.1.0
+date-released: 2026-10-23
+license: MIT
+repository-code: "https://github.com/SirAseef/heatflood-sentinel"
+authors:
+  - family-names: Ahmed
+    given-names: Aseef
+    affiliation: "NED University of Engineering and Technology, Karachi"
+keywords: [heatwave, flash flood, ERA5, LSTM, ConvLSTM, SARIMA, XGBoost, Kafka, Spark, Pakistan, big data]
+references:
+  - type: thesis
+    title: "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan"
+    authors:
+      - family-names: Ahmed
+        given-names: Aseef
+    thesis-type: "MS Data Science thesis (supervisor: Dr. Maria Andaleeb Siddiqui)"
+    institution:
+      name: "NED University of Engineering and Technology, Karachi"

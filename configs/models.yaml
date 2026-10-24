@@ -1,0 +1,12 @@
+# Small CPU-friendly configs (dev-lite). Full-profile search spaces are in docs/models.md.
+seed: 42
+hourly_horizons_h: [1, 6, 24]
+daily_horizons_d: [1, 2, 3, 4, 5, 6, 7]
+xgboost: {n_estimators: 300, max_depth: 6, learning_rate: 0.08, subsample: 0.8, colsample_bytree: 0.8, min_child_weight: 3, tree_method: hist}
+xgb_train_stride_h: 3            # subsample hourly training rows (CPU budget)
+lstm: {hidden: 64, layers: 2, dropout: 0.1, lookback: 24, epochs: 6, batch: 512, lr: 0.002, max_train_samples: 120000, patience: 2}
+lstm_daily: {hidden: 48, layers: 1, dropout: 0.1, lookback: 30, epochs: 40, batch: 256, lr: 0.003, patience: 6}
+convlstm: {hidden: [16, 16], kernel: 3, lookback: 12, horizon: 6, epochs: 12, patience: 3, batch: 32, lr: 0.001, extreme_alpha: 1.0, train_stride_h: 3}
+sarima: {order: [1, 0, 1], seasonal_order: [0, 0, 0, 0], fourier_k: 3, fit_years: 3, refit: false}
+detection: {n_estimators: 300, max_depth: 5, learning_rate: 0.05, far_cap: 0.5}
+seeds: [42, 7, 2024]

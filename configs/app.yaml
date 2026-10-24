@@ -1,0 +1,33 @@
+# Global settings. Area = [North, West, South, East] (SRS 6.1).
+profile: dev-lite
+era5:
+  area: [37.5, 60.5, 23.5, 77.5]
+  variables: [2m_temperature, total_precipitation, 2m_dewpoint_temperature]
+  years: [1991, 2025]
+openmeteo:
+  # Open-Meteo historical archive, ERA5 model (0.25 deg reanalysis served as points). No key needed.
+  archive_url: https://archive-api.open-meteo.com/v1/archive
+  live_url: https://api.open-meteo.com/v1/forecast
+  live_url_fallback: https://previous-runs-api.open-meteo.com/v1/forecast   # same Open-Meteo forecast data; used when api.* returns 429 (daily quota)
+  model: era5
+  city_hourly: [temperature_2m, dew_point_2m, precipitation, surface_pressure, wind_speed_10m, soil_moisture_0_to_7cm]
+  city_years: [2015, 2022]
+  grid_hourly: [temperature_2m, precipitation]
+  grid_years: [2015, 2022]
+  grid_step_deg: 2.0            # coarse subsample of the ERA5 0.25 deg grid (CPU budget)
+  grid_lat: [24.0, 36.0]
+  grid_lon: [61.0, 75.0]
+paths:
+  raw: data/raw/era5
+  raw_openmeteo: data/raw/openmeteo
+  bronze: data/bronze
+  silver: data/silver
+  gold: data/gold
+  external: data/external
+  results: results
+climatology:
+  baseline_years: [1991, 2020]   # full profile; dev-lite uses the train split (see splits)
+  window_days: 7
+splits:                          # time-only splits (SRS 7.5); dev-lite-real profile
+  city:  {train: ["2015-01-01", "2020-12-31"], val: ["2021-01-01", "2021-12-31"], test: ["2022-01-01", "2022-12-31"]}
+  grid:  {train: ["2015-01-01", "2020-12-31"], val: ["2021-01-01", "2021-12-31"], test: ["2022-01-01", "2022-12-31"]}

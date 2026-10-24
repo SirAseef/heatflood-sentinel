@@ -1,0 +1,15 @@
+# Hazard definitions (SRS 3.1). Switch definition without touching code.
+heatwave:
+  definition: percentile          # percentile | absolute
+  percentile: 95
+  min_consecutive_days: 3
+  absolute_tmax_c: 40.0           # used when definition = absolute
+  window_days: 7
+flash_flood:
+  definition: proxy_6h_api        # proxy_6h_api | p995_24h
+  window_hours: 6
+  min_mm: 50.0
+  local_percentile: 99
+  api_percentile: 75
+  api_k: 0.85
+  p995_24h_percentile: 99.5

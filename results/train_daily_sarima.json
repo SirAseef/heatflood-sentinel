@@ -1,0 +1,402 @@
+{
+ "tmax/Bahawalpur": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4294.928829582489,
+  "seconds": 8.2,
+  "ljung_box_p_lag10": 0.031234646688532486
+ },
+ "tmax/Dera Ghazi Khan": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 4503.033948302853,
+  "seconds": 6.54,
+  "ljung_box_p_lag10": 0.06629284391762029
+ },
+ "tmax/Faisalabad": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4525.2915726939555,
+  "seconds": 5.91,
+  "ljung_box_p_lag10": 0.41070487640114967
+ },
+ "tmax/Gilgit": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 4600.865927745293,
+  "seconds": 3.2,
+  "ljung_box_p_lag10": 0.9916560699401138
+ },
+ "tmax/Gwadar": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 2931.2173286704246,
+  "seconds": 7.38,
+  "ljung_box_p_lag10": 0.9983598585999686
+ },
+ "tmax/Hyderabad": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4054.908393968947,
+  "seconds": 6.84,
+  "ljung_box_p_lag10": 0.3572014086199082
+ },
+ "tmax/Islamabad": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4723.216084049511,
+  "seconds": 5.47,
+  "ljung_box_p_lag10": 0.5494912744996185
+ },
+ "tmax/Jacobabad": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4050.0313343920675,
+  "seconds": 7.24,
+  "ljung_box_p_lag10": 0.5518641841431535
+ },
+ "tmax/Karachi": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 3829.591644406348,
+  "seconds": 7.67,
+  "ljung_box_p_lag10": 0.8162991859824945
+ },
+ "tmax/Lahore": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4585.945204466141,
+  "seconds": 7.27,
+  "ljung_box_p_lag10": 0.777027085747451
+ },
+ "tmax/Larkana": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4044.4694697114946,
+  "seconds": 5.3,
+  "ljung_box_p_lag10": 0.49290195580243534
+ },
+ "tmax/Mardan": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 5022.339285815861,
+  "seconds": 6.26,
+  "ljung_box_p_lag10": 0.4921113648981176
+ },
+ "tmax/Multan": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 4438.059282623844,
+  "seconds": 7.35,
+  "ljung_box_p_lag10": 0.07549304202525199
+ },
+ "tmax/Peshawar": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 5029.638908008856,
+  "seconds": 4.65,
+  "ljung_box_p_lag10": 0.3333107645891082
+ },
+ "tmax/Quetta": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4534.029566115276,
+  "seconds": 6.75,
+  "ljung_box_p_lag10": 0.3392786981331161
+ },
+ "tmax/Rawalpindi": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4800.210131927257,
+  "seconds": 8.64,
+  "ljung_box_p_lag10": 0.5408208533487182
+ },
+ "tmax/Sialkot": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 4711.607159319211,
+  "seconds": 6.72,
+  "ljung_box_p_lag10": 0.9670295896339576
+ },
+ "tmax/Skardu": {
+  "order": [
+   2,
+   0,
+   1
+  ],
+  "aic": 4785.991296487922,
+  "seconds": 5.37,
+  "ljung_box_p_lag10": 0.9696232019873399
+ },
+ "tmax/Sukkur": {
+  "order": [
+   2,
+   0,
+   2
+  ],
+  "aic": 3980.9947007446044,
+  "seconds": 8.34,
+  "ljung_box_p_lag10": 0.13102116674694944
+ },
+ "tmax/Turbat": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 4067.6829115859264,
+  "seconds": 7.86,
+  "ljung_box_p_lag10": 0.9779690717603183
+ },
+ "tp/Bahawalpur": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 1482.3606471309074,
+  "seconds": 2.58,
+  "ljung_box_p_lag10": 0.8598084050038435
+ },
+ "tp/Dera Ghazi Khan": {
+  "order": [
+   0,
+   0,
+   2
+  ],
+  "aic": 1686.513391191333,
+  "seconds": 3.38,
+  "ljung_box_p_lag10": 0.06036367330847088
+ },
+ "tp/Faisalabad": {
+  "order": [
+   0,
+   0,
+   2
+  ],
+  "aic": 2189.9833271256903,
+  "seconds": 6.04,
+  "ljung_box_p_lag10": 0.026545555240746675
+ },
+ "tp/Gilgit": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 2568.0012423673916,
+  "seconds": 4.14,
+  "ljung_box_p_lag10": 0.7565771001941131
+ },
+ "tp/Gwadar": {
+  "order": [
+   1,
+   0,
+   0
+  ],
+  "aic": 658.7667286781674,
+  "seconds": 5.49,
+  "ljung_box_p_lag10": 0.01138284041183064
+ },
+ "tp/Hyderabad": {
+  "order": [
+   1,
+   0,
+   2
+  ],
+  "aic": 935.6958602389705,
+  "seconds": 4.01,
+  "ljung_box_p_lag10": 0.4755553288492782
+ },
+ "tp/Islamabad": {
+  "order": [
+   0,
+   0,
+   1
+  ],
+  "aic": 2694.638389812177,
+  "seconds": 3.29,
+  "ljung_box_p_lag10": 0.16569306456244354
+ },
+ "tp/Jacobabad": {
+  "order": [
+   1,
+   0,
+   0
+  ],
+  "aic": 1305.512623799109,
+  "seconds": 3.18,
+  "ljung_box_p_lag10": 0.9389368433128727
+ },
+ "tp/Karachi": {
+  "order": [
+   0,
+   0,
+   2
+  ],
+  "aic": 823.2327480716302,
+  "seconds": 3.06,
+  "ljung_box_p_lag10": 0.23757402195378327
+ },
+ "tp/Lahore": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 2354.5344261783775,
+  "seconds": 3.78,
+  "ljung_box_p_lag10": 0.2171457387810639
+ },
+ "tp/Larkana": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 1129.0575273272111,
+  "seconds": 3.13,
+  "ljung_box_p_lag10": 0.5026001894490943
+ },
+ "tp/Mardan": {
+  "order": [
+   0,
+   0,
+   1
+  ],
+  "aic": 2488.2850139723905,
+  "seconds": 3.05,
+  "ljung_box_p_lag10": 0.7678885212691758
+ },
+ "tp/Multan": {
+  "order": [
+   2,
+   0,
+   0
+  ],
+  "aic": 1880.3886674472142,
+  "seconds": 3.36,
+  "ljung_box_p_lag10": 0.5073042199693611
+ },
+ "tp/Peshawar": {
+  "order": [
+   2,
+   0,
+   0
+  ],
+  "aic": 2543.930820213739,
+  "seconds": 3.11,
+  "ljung_box_p_lag10": 0.47545153419687547
+ },
+ "tp/Quetta": {
+  "order": [
+   2,
+   0,
+   1
+  ],
+  "aic": 1900.530500557409,
+  "seconds": 2.79,
+  "ljung_box_p_lag10": 0.6541906386289882
+ },
+ "tp/Rawalpindi": {
+  "order": [
+   0,
+   0,
+   1
+  ],
+  "aic": 2685.391360098887,
+  "seconds": 2.79,
+  "ljung_box_p_lag10": 0.2998272914426388
+ },
+ "tp/Sialkot": {
+  "order": [
+   0,
+   0,
+   1
+  ],
+  "aic": 2683.982788156756,
+  "seconds": 3.61,
+  "ljung_box_p_lag10": 0.29380956319242196
+ },
+ "tp/Skardu": {
+  "order": [
+   0,
+   0,
+   2
+  ],
+  "aic": 2691.7077064471546,
+  "seconds": 3.4,
+  "ljung_box_p_lag10": 0.8400314815301386
+ },
+ "tp/Sukkur": {
+  "order": [
+   1,
+   0,
+   1
+  ],
+  "aic": 1082.3479198298317,
+  "seconds": 2.53,
+  "ljung_box_p_lag10": 0.9238028728299033
+ },
+ "tp/Turbat": {
+  "order": [
+   0,
+   0,
+   1
+  ],
+  "aic": 571.0549457317568,
+  "seconds": 4.45,
+  "ljung_box_p_lag10": 0.1305533509105436
+ }
+}

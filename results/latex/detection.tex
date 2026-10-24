@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\caption{Detection scores, test 2022 (flood labels are reanalysis proxies).}
+\label{tab:det}
+\begin{tabular}{llrrrrrrrrr}
+\toprule
+hazard & lead & model & positives & csi & f1 & pod & far & pr\_auc & roc\_auc & brier \\
+\midrule
+heatwave & 1d & rule\_persistence & 551 & 0.717 & 0.835 & 0.835 & 0.165 & nan & nan & nan \\
+heatwave & 1d & lstm\_forecast\_rule & 551 & 0.253 & 0.404 & 0.258 & 0.066 & nan & nan & nan \\
+heatwave & 1d & xgboost & 551 & 0.356 & 0.525 & 0.407 & 0.261 & 0.589 & 0.943 & 0.047 \\
+heatwave & 3d & rule\_persistence & 549 & 0.348 & 0.516 & 0.517 & 0.485 & nan & nan & nan \\
+heatwave & 3d & lstm\_forecast\_rule & 549 & 0.007 & 0.014 & 0.007 & 0.000 & nan & nan & nan \\
+heatwave & 3d & xgboost & 549 & 0.000 & 0.000 & 0.000 & nan & 0.209 & 0.814 & 0.067 \\
+flash\_flood & 6h & rule\_persistence & 405 & 0.585 & 0.738 & 0.738 & 0.262 & nan & nan & nan \\
+flash\_flood & 6h & xgboost & 405 & 0.609 & 0.757 & 0.723 & 0.206 & 0.814 & 0.984 & 0.005 \\
+flash\_flood & 24h & rule\_persistence & 405 & 0.136 & 0.240 & 0.240 & 0.760 & nan & nan & nan \\
+flash\_flood & 24h & xgboost & 405 & 0.000 & 0.000 & 0.000 & nan & 0.216 & 0.939 & 0.012 \\
+\bottomrule
+\end{tabular}
+\end{table}

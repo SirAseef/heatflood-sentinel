@@ -1,0 +1,14 @@
+# Alert engine (SRS 3.3, 9.4). Probabilities -> severity levels 0..4.
+levels:
+  - {level: 0, name: Normal,    min_p: 0.00}
+  - {level: 1, name: Advisory,  min_p: 0.30}
+  - {level: 2, name: Watch,     min_p: 0.55}
+  - {level: 3, name: Warning,   min_p: 0.75}
+  - {level: 4, name: Emergency, min_p: 0.90}
+heatwave:
+  warning_min_hot_days: 2        # level 3 also needs >= 2 consecutive hot days
+  emergency_min_hot_days: 3
+flash_flood:
+  emergency_min_rain_6h_mm: 100.0
+hysteresis_evaluations: 2        # de-escalate only after 2 consecutive lower evaluations
+cooldown_hours: 3                # do not re-notify same level within 3 h

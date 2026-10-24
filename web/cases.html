@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Case Studies · HeatFlood Sentinel</title><link rel="stylesheet" href="/static/styles/tokens.css"><link rel="stylesheet" href="/static/styles/app.css">
+<script src="/static/js/charts.js"></script><script src="/static/js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><div class="controls"><label>Case <select id="case"></select></label><label>City <select id="city"></select></label></div>
+<h2 id="t">Case replay</h2><p class="sub">Observed (ERA5) vs detector output on the held-out year; shaded = labelled event days/windows.</p><div class="metricrow" id="m"></div><div id="obs" class="chart"></div><div id="det" class="chart" style="margin-top:12px"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Notes</h2><p class="prose">(a) <b>Pre-monsoon heat 2022</b>: Pakistan and north-west India saw record heat from March to May 2022 (Jacobabad &gt; 50 °C in May). (b) <b>Monsoon 2022</b>: record rainfall from mid-June to late August submerged large parts of Sindh and Balochistan. Flash-flood labels here are reanalysis <b>proxies</b> (ERA5 does not observe floods; ~25 km cells cannot resolve convective cells or urban drainage). (c) The April 2025 heat episode requires 2025 data (<code>make data</code> with a later year range) and is not part of this run. Lead time of first alert = hours between the first predicted flag and the first labelled event in the window.</p></div></section>
+<script>
+shell('cases', 'Case Studies', 'Replays of the 2022 pre-monsoon heat and monsoon flood windows.', '<span class="chip real">REAL ERA5 · 2022</span><span class="chip proxy">FLOOD = PROXY</span>');
+(async () => {
+  const cases = await api('/cases'), cities = await api('/cities');
+  $('#case').innerHTML = cases.map(c => `<option value="${c.id}">${c.title}</option>`).join(''); $('#city').innerHTML = cities.map(c => `<option>${c.city}</option>`).join(''); $('#city').value = 'Jacobabad';
+  const draw = async () => { const r = await api(`/cases/${$('#case').value}/replay?entity=${encodeURIComponent($('#city').value)}`);
+    $('#t').textContent = `${r.case.title} — ${r.entity}`;
+    const bands = []; let s = null; r.detections.forEach((d, i) => { if (d.label && s === null) s = d.time; if ((!d.label || i === r.detections.length - 1) && s !== null) { bands.push([s, d.time, '#ef444433']); s = null; } });
+    const heat = r.case.hazard === 'heatwave';
+    HFS_CHARTS.lineChart($('#obs'), heat ? [{ name: 'tmax', label: 'Daily Tmax (°C)', color: '#FF9A4D', width: 2, points: r.observations.map(o => [o.day, o.tmax]) }, { name: 'tmin', label: 'Daily Tmin (°C)', color: '#FBBF24', points: r.observations.map(o => [o.day, o.tmin]) }]
+      : [{ name: 'tp', type: 'bar', label: 'Daily precipitation (mm)', color: '#38BDF8', points: r.observations.map(o => [o.day, o.tp]) }], { height: 220, bands, ymin: heat ? undefined : 0 });
+    HFS_CHARTS.lineChart($('#det'), [{ name: 'p', label: heat ? 'P(heatwave tomorrow)' : 'P(flood-risk next 6 h)', color: heat ? '#FF3D3D' : '#2563EB', width: 2, points: r.detections.map(d => [d.time, d.probability]) }], { height: 180, ymin: 0, ymax: 1, bands });
+    const lt = r.first_alert && r.first_event ? ((new Date(r.first_event) - new Date(r.first_alert)) / 36e5) : null;
+    const tp = r.detections.filter(d => d.label && d.predicted_flag).length, ev = r.detections.filter(d => d.label).length, fa = r.detections.filter(d => !d.label && d.predicted_flag).length;
+    $('#m').innerHTML = `<div class="metric">First alert<b>${r.first_alert ? r.first_alert.slice(0, 13) : '–'}</b></div><div class="metric">First labelled event<b>${r.first_event ? r.first_event.slice(0, 13) : '–'}</b></div>
+      <div class="metric">Lead time of first alert<b>${lt === null ? '–' : lt.toFixed(0) + ' h'}</b></div><div class="metric">Hits / events<b>${tp} / ${ev}</b></div><div class="metric">False alarms<b>${fa}</b></div>`; };
+  $('#case').onchange = draw; $('#city').onchange = draw; draw();
+})();
+</script></body></html>

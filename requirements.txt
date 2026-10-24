@@ -1,0 +1,19 @@
+# Core (CPU). For CUDA install torch from pytorch.org instead.
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14
+xarray>=2024.1
+netCDF4>=1.6
+dask[array]>=2024.1
+pyyaml>=6
+requests>=2.31
+scipy>=1.11
+scikit-learn>=1.4
+statsmodels>=0.14
+xgboost>=2.0
+torch>=2.1
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.5
+matplotlib>=3.8
+tabulate>=0.9

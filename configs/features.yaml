@@ -1,0 +1,10 @@
+# Feature specification (SRS 7.2). Adding a feature = editing this file (FR-FE-05).
+target_vars: [t2m, tp]
+lag_vars: [t2m, tp, d2m, sp, ws10, swvl1]
+lags_h: [1, 2, 3, 6, 12, 24, 48, 72, 168]
+roll_vars: [t2m, tp]
+roll_windows_h: [3, 6, 12, 24, 72, 168]
+roll_stats: [mean, std, min, max]
+roll_sum_vars: [tp]
+api_k_daily: 0.85
+cyclical: [doy, hour]

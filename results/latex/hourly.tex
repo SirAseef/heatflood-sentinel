@@ -1,0 +1,41 @@
+\begin{table}[t]
+\centering
+\caption{Hourly forecasts, test 2022.}
+\label{tab:hourly}
+\begin{tabular}{llrrrrr}
+\toprule
+var & horizon & model & rmse & mae & nse & ss\_vs\_persistence \\
+\midrule
+t2m & 1 & lstm & 0.634 & 0.446 & 0.996 & 0.834 \\
+t2m & 1 & xgboost & 0.679 & 0.476 & 0.996 & 0.810 \\
+t2m & 1 & persistence & 1.558 & 0.976 & 0.977 & 0.000 \\
+t2m & 1 & diurnal\_persistence & 1.937 & 1.367 & 0.964 & -0.546 \\
+t2m & 1 & climatology & 2.878 & 2.138 & 0.921 & -2.414 \\
+t2m & 6 & lstm & 1.372 & 1.031 & 0.982 & 0.944 \\
+t2m & 6 & xgboost & 1.469 & 1.091 & 0.979 & 0.935 \\
+t2m & 6 & diurnal\_persistence & 1.938 & 1.368 & 0.964 & 0.888 \\
+t2m & 6 & climatology & 2.878 & 2.138 & 0.921 & 0.752 \\
+t2m & 6 & persistence & 5.783 & 4.734 & 0.680 & 0.000 \\
+t2m & 24 & lstm & 1.756 & 1.269 & 0.971 & 0.179 \\
+t2m & 24 & xgboost & 1.779 & 1.304 & 0.970 & 0.157 \\
+t2m & 24 & diurnal\_persistence & 1.938 & 1.369 & 0.964 & 0.000 \\
+t2m & 24 & persistence & 1.938 & 1.369 & 0.964 & 0.000 \\
+t2m & 24 & climatology & 2.878 & 2.137 & 0.921 & -1.206 \\
+tp & 1 & lstm & 0.262 & 0.047 & 0.582 & 0.107 \\
+tp & 1 & persistence & 0.278 & 0.046 & 0.532 & 0.000 \\
+tp & 1 & xgboost & 0.279 & 0.048 & 0.526 & -0.012 \\
+tp & 1 & climatology & 0.403 & 0.105 & 0.014 & -1.106 \\
+tp & 1 & diurnal\_persistence & 0.526 & 0.111 & -0.684 & -2.596 \\
+tp & 6 & lstm & 0.382 & 0.076 & 0.113 & 0.346 \\
+tp & 6 & xgboost & 0.382 & 0.079 & 0.111 & 0.345 \\
+tp & 6 & climatology & 0.403 & 0.105 & 0.014 & 0.273 \\
+tp & 6 & persistence & 0.472 & 0.092 & -0.357 & 0.000 \\
+tp & 6 & diurnal\_persistence & 0.526 & 0.111 & -0.684 & -0.241 \\
+tp & 24 & lstm & 0.398 & 0.091 & 0.035 & 0.427 \\
+tp & 24 & xgboost & 0.399 & 0.090 & 0.034 & 0.426 \\
+tp & 24 & climatology & 0.403 & 0.105 & 0.014 & 0.414 \\
+tp & 24 & diurnal\_persistence & 0.526 & 0.111 & -0.684 & 0.000 \\
+tp & 24 & persistence & 0.526 & 0.111 & -0.684 & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}

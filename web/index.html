@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Command Center · HeatFlood Sentinel</title><link rel="stylesheet" href="/static/styles/tokens.css"><link rel="stylesheet" href="/static/styles/app.css">
+<script src="/static/js/charts.js"></script><script src="/static/js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid">
+  <div class="card glass span-7"><h2>Pakistan hazard map <span class="chip live">LIVE · Open-Meteo</span></h2><p class="sub">20 reference cities coloured by the current live alert level (stream processor on the real-time feed). Hover a marker for details.</p><div id="map" class="chart"></div></div>
+  <div class="card glass span-5"><h2>Live alert feed <span class="chip">SSE replay · 2022 test year</span></h2><p class="sub">Alert events emitted by the streaming alert engine while replaying held-out ERA5 (Apr–Sep 2022).</p><div class="feed" id="feed"></div></div>
+</section>
+<section class="grid">
+  <div class="card glass span-7"><h2>Top at-risk cities right now</h2><p class="sub">From the live snapshot: model probabilities (latest complete day / 6-h window) plus 72-h forecast checks against train-period climatology.</p><div id="risk"></div></div>
+  <div class="card glass span-5"><h2>Headline accuracy (test 2022)</h2><p class="sub">Daily Tmax RMSE (°C) by lead day, all 20 cities — lower is better.</p><div id="skill" class="chart"></div></div>
+</section>
+<script>
+shell('index', 'Command Center', 'Near-real-time heatwave and flash-flood risk for Pakistan — ERA5-trained models, live Open-Meteo feed.', '<span class="chip real">REAL ERA5 DATA</span><span class="chip live">LIVE FEED</span><span class="chip proxy">FLOOD = PROXY LABEL</span>');
+(async () => {
+  const [s, live] = await Promise.all([api('/summary'), api('/live').catch(() => null)]);
+  const det = s.detection.filter(r => r.model === 'xgboost');
+  const hw = det.find(r => r.hazard === 'heatwave' && r.lead === '1d') || {}, ff = det.find(r => r.hazard === 'flash_flood' && r.lead === '6h') || {};
+  const lstm1 = s.leaderboard_daily.find(r => r.var === 'tmax' && r.horizon === 1 && r.model === 'lstm') || {};
+  const openLive = live ? live.cities.flatMap(c => c.open_alerts).length : 0;
+  const maxHw = live ? Math.max(...live.cities.map(c => c.heatwave_prob_model ?? 0)) : null, maxFf = live ? Math.max(...live.cities.map(c => c.flood_prob_model ?? 0)) : null;
+  const k = (cls, label, value, note) => `<div class="kpi glass span-3 ${cls}"><span class="label">${label}</span><span class="value">${value}</span><span class="note">${note}</span></div>`;
+  $('#kpis').innerHTML = k('heat', 'Live open alerts', openLive, live ? 'snapshot ' + pkt(live.generated_utc) : 'run make live') +
+    k('heat', 'Max heatwave prob. (live)', maxHw === null ? '–' : pct(maxHw, 0), 'XGBoost detector, lead 1 day') +
+    k('flood', 'Max flood-risk prob. (live)', maxFf === null ? '–' : pct(maxFf, 0), 'XGBoost detector, lead 6 h (proxy)') +
+    k('ok', 'Stream p95 batch latency', fmt(s.stream.batch_ms?.p95, 0) + '<small> ms</small>', fmt(s.stream.msgs_per_s, 0) + ' msgs/s · local fallback runtime') ;
+  $('#kpis').innerHTML += k('violet', 'Heatwave CSI (test)', fmt(hw.csi), 'F1 ' + fmt(hw.f1) + ' · FAR ' + fmt(hw.far)) + k('flood', 'Flood-risk CSI (test)', fmt(ff.csi), 'F1 ' + fmt(ff.f1) + ' · PR-AUC ' + fmt(ff.pr_auc)) +
+    k('ok', 'LSTM Tmax RMSE, day+1', fmt(lstm1.rmse) + '<small> °C</small>', 'NSE ' + fmt(lstm1.nse, 3)) + k('violet', 'Alert events (replay)', s.alerts_total, 'hysteresis + cooldown + dedup');
+  if (live) {
+    const pts = live.cities.map(c => { const lvl = Math.max(0, ...c.open_alerts.map(a => a.level));
+      return { name: c.city, lat: c.lat, lon: c.lon, color: LEVEL_COLORS[lvl], pulse: lvl >= 3, r: 7,
+        title: `${c.city}: ${fmt(c.current.temperature_2m, 1)} °C now · heat p=${fmt(c.heatwave_prob_model)} · flood p=${fmt(c.flood_prob_model)} · ${LEVELS[lvl]}` }; });
+    await HFS_CHARTS.pakistanMap($('#map'), pts);
+    const lg = document.createElement('div'); lg.className = 'legend'; lg.innerHTML = LEVELS.map((l, i) => `<span><i style="background:${LEVEL_COLORS[i]};height:10px;width:10px;border-radius:50%"></i>${l}</span>`).join(''); $('#map').appendChild(lg);
+    const rows = live.cities.map(c => ({ ...c, score: Math.max(c.heatwave_prob_model ?? 0, c.flood_prob_model ?? 0) + c.forecast_hot_days_above_p95 * 0.1 })).sort((a, b) => b.score - a.score).slice(0, 8);
+    $('#risk').innerHTML = table(rows, [{ k: 'city', label: 'City' }, { k: 'province', label: 'Province' },
+      { k: 'current', label: 'Now °C', num: 1, f: v => fmt(v.temperature_2m, 1) }, { k: 'heatwave_prob_model', label: 'Heat p', num: 1, f: v => fmt(v) },
+      { k: 'flood_prob_model', label: 'Flood p', num: 1, f: v => fmt(v) }, { k: 'forecast_hot_days_above_p95', label: 'Hot days ≥p95 (72h)', num: 1 },
+      { k: 'forecast_max_rain_24h_mm', label: 'Max 24h rain fc (mm)', num: 1, f: v => fmt(v, 1) },
+      { k: 'open_alerts', label: 'Level', f: v => sev(Math.max(0, ...v.map(a => a.level))) }]);
+  } else { $('#map').innerHTML = '<p class="muted">No live snapshot yet.</p>'; }
+  const lb = s.leaderboard_daily.filter(r => r.var === 'tmax');
+  const models = [...new Set(lb.map(r => r.model))];
+  HFS_CHARTS.lineChart($('#skill'), models.map(m => ({ name: m, dots: true, points: lb.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 240, xfmt: v => 'd+' + v, ylabel: 'RMSE °C' });
+  const al = await api('/alerts?limit=400'); const feed = $('#feed'); let i = 0;
+  const push = a => { const d = document.createElement('div'); d.className = 'item';
+    d.innerHTML = `${sev(a.level)}<div><b>${a.entity_id}</b> · ${a.hazard.replace('_', '-')} <span class="muted">${a.action}</span><div class="muted" style="font-size:11.5px">p=${fmt(a.probability)} · ${(a.drivers || []).slice(0, 2).map(d => d.feature).join(', ')}</div></div><span class="t">${a.issue_time.slice(0, 13).replace('T', ' ')}Z</span>`;
+    feed.prepend(d); while (feed.children.length > 40) feed.lastChild.remove(); };
+  al.slice(-12).forEach(push);
+  const es = new EventSource('/api/v1/stream/alerts?speed=1.5'); es.addEventListener('alert', e => { if (++i > 12) push(JSON.parse(e.data)); });
+})();
+</script></body></html>

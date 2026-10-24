@@ -1,0 +1,42 @@
+{
+ "tmax": [
+  {
+   "seed": 42,
+   "fit_seconds": 45.1,
+   "epochs": 7,
+   "best_val": 0.599462730543954
+  },
+  {
+   "seed": 7,
+   "fit_seconds": 46.1,
+   "epochs": 7,
+   "best_val": 0.6012008142258439
+  },
+  {
+   "seed": 2024,
+   "fit_seconds": 46.9,
+   "epochs": 8,
+   "best_val": 0.5790381202740329
+  }
+ ],
+ "tp": [
+  {
+   "seed": 42,
+   "fit_seconds": 46.2,
+   "epochs": 8,
+   "best_val": 0.583452637573438
+  },
+  {
+   "seed": 7,
+   "fit_seconds": 53.2,
+   "epochs": 9,
+   "best_val": 0.5863990216915097
+  },
+  {
+   "seed": 2024,
+   "fit_seconds": 53.4,
+   "epochs": 9,
+   "best_val": 0.5899959770696503
+  }
+ ]
+}

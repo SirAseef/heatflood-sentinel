@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hazard Detection · HeatFlood Sentinel</title><link rel="stylesheet" href="/static/styles/tokens.css"><link rel="stylesheet" href="/static/styles/app.css">
+<script src="/static/js/charts.js"></script><script src="/static/js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-12"><h2>Detection scores — held-out 2022 <span class="chip proxy">flood = reanalysis PROXY</span></h2>
+<p class="sub">Rare-event scores (CSI, F1, FAR, PR-AUC); accuracy is never a headline metric. XGBoost probabilities are isotonic-calibrated on 2021 and thresholded to maximise CSI subject to FAR ≤ 0.5.</p><div id="dettbl"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Heatwave probability timeline <select id="hcity" style="float:right"></select></h2><p class="sub">Calibrated P(heatwave tomorrow) vs labelled heatwave days (shaded), 2022.</p><div id="hwchart" class="chart"></div></div>
+<div class="card glass span-5"><h2>Reliability (heatwave, lead 1 d)</h2><p class="sub">Observed frequency vs mean forecast probability; diagonal = perfect calibration.</p><div id="rel" class="chart"></div></div></section>
+<section class="grid"><div class="card glass span-6"><h2>Alert events by city (stream replay)</h2><p class="sub">Created/escalated events at level ≥ Watch, Apr–Sep 2022.</p><div id="bycity" class="chart"></div></div>
+<div class="card glass span-6"><h2>Alert log</h2><p class="sub">Latest alert-engine events with top SHAP drivers.</p><div id="alog"></div></div></section>
+<script>
+shell('hazards', 'Hazard Detection', 'Heatwave (T3) and flash-flood-risk (T4) detection, calibration and alert events.', '<span class="chip real">REAL ERA5 · TEST 2022</span><span class="chip proxy">PROXY FLOOD LABELS</span>');
+(async () => {
+  const b = await api('/benchmarks?track=daily'); const res = b.detection_full.results || [];
+  const pos = b.detection_full.proxy_6h_api_positives || {};
+  const k = (cls, label, value, note) => `<div class="kpi glass span-3 ${cls}"><span class="label">${label}</span><span class="value">${value}</span><span class="note">${note}</span></div>`;
+  const g = (hz, l, m = 'xgboost') => res.find(r => r.hazard === hz && r.lead === l && r.model === m) || {};
+  $('#kpis').innerHTML = k('heat', 'Heatwave CSI · lead 1 d', fmt(g('heatwave', '1d').csi), 'rule baseline ' + fmt(g('heatwave', '1d', 'rule_persistence').csi)) +
+    k('heat', 'Heatwave CSI · lead 3 d', fmt(g('heatwave', '3d').csi), 'LSTM-forecast rule ' + fmt(g('heatwave', '3d', 'lstm_forecast_rule').csi)) +
+    k('flood', 'Flood-risk CSI · lead 6 h', fmt(g('flash_flood', '6h').csi), 'rule baseline ' + fmt(g('flash_flood', '6h', 'rule_persistence').csi)) +
+    k('violet', 'CNN grid detector CSI', fmt(b.cnn.csi), 'heatwave, lead 1 d, 2° grid');
+  $('#dettbl').innerHTML = table(res, [{ k: 'hazard', label: 'Hazard' }, { k: 'lead', label: 'Lead' }, { k: 'model', label: 'Model' }, { k: 'positives', label: 'Events', num: 1 }, { k: 'n', label: 'n', num: 1 },
+    { k: 'csi', label: 'CSI', num: 1, f: fmt }, { k: 'f1', label: 'F1', num: 1, f: fmt }, { k: 'pod', label: 'POD', num: 1, f: fmt }, { k: 'far', label: 'FAR', num: 1, f: fmt },
+    { k: 'pr_auc', label: 'PR-AUC', num: 1, f: fmt }, { k: 'roc_auc', label: 'ROC-AUC', num: 1, f: fmt }, { k: 'brier', label: 'Brier', num: 1, f: v => fmt(v, 4) }, { k: 'threshold', label: 'Thr', num: 1, f: v => fmt(v, 3) }],
+    { best: r => r.model === 'xgboost' }) + `<p class="muted" style="font-size:12px">Default flood definition <code>proxy_6h_api</code> (6-h ≥ max(50 mm, p99) and wet antecedent) yields only ${pos.train ?? '–'}/${pos.val ?? '–'}/${pos.test ?? '–'} positives (train/val/test) at ERA5 city points — too rare to train; detectors therefore use the configured alternative <code>p995_24h</code> (see DEVIATIONS.md).</p>`;
+  const cities = await api('/cities'); $('#hcity').innerHTML = cities.map(c => `<option>${c.city}</option>`).join(''); $('#hcity').value = 'Jacobabad';
+  const drawHw = async () => { const d = await api(`/detections?hazard=heatwave&lead=1d&entity=${encodeURIComponent($('#hcity').value)}`);
+    const bands = []; let s = null; d.forEach((r, i) => { if (r.label && s === null) s = r.time; if ((!r.label || i === d.length - 1) && s !== null) { bands.push([s, r.time, '#ef444433']); s = null; } });
+    const thr = g('heatwave', '1d').threshold;
+    HFS_CHARTS.lineChart($('#hwchart'), [{ name: 'p', label: 'P(heatwave tomorrow)', color: '#FF9A4D', width: 2, points: d.map(r => [r.time, r.probability]) },
+      { name: 't', label: 'decision threshold', color: '#FBBF24', dash: '4 4', points: d.length ? [[d[0].time, thr], [d[d.length - 1].time, thr]] : [] }], { height: 240, ymin: 0, ymax: 1, bands }); };
+  $('#hcity').onchange = drawHw; drawHw();
+  const rel = g('heatwave', '1d').reliability || [];
+  HFS_CHARTS.lineChart($('#rel'), [{ name: 'diag', label: 'perfect', color: '#64748B', dash: '4 4', points: [[0, 0], [1, 1]] }, { name: 'xgboost', label: 'XGBoost (calibrated)', dots: true, points: rel.map(r => [r.mean_p, r.obs_freq]) }], { time: false, height: 240, ymin: 0, ymax: 1 });
+  const al = await api('/alerts?limit=5000');
+  const cnt = {}; al.filter(a => a.level >= 2 && ['created', 'escalated'].includes(a.action)).forEach(a => { cnt[a.entity_id] = cnt[a.entity_id] || { heatwave: 0, flash_flood: 0 }; cnt[a.entity_id][a.hazard]++; });
+  const items = Object.entries(cnt).map(([c, v]) => ({ label: c, value: v.heatwave + v.flash_flood })).sort((a, b) => b.value - a.value).slice(0, 14);
+  HFS_CHARTS.barChart($('#bycity'), items, { fmt: v => v.toFixed(0), from: '#FF9A4D', to: '#FF3D3D' });
+  $('#alog').innerHTML = table(al.slice(-60).reverse(), [{ k: 'issue_time', label: 'Time (UTC)', f: v => `<span class="mono">${v.slice(0, 16).replace('T', ' ')}</span>` }, { k: 'entity_id', label: 'City' }, { k: 'hazard', label: 'Hazard' },
+    { k: 'level', label: 'Level', f: sev }, { k: 'action', label: 'Action' }, { k: 'probability', label: 'p', num: 1, f: fmt }, { k: 'drivers', label: 'Top drivers', f: v => (v || []).slice(0, 3).map(d => d.feature).join(', ') }], { max: 360 });
+})();
+</script></body></html>

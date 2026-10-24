@@ -1,0 +1,112 @@
+{
+ "window": [
+  "2022-04-01",
+  "2022-09-30"
+ ],
+ "events": 87840,
+ "entities": 20,
+ "batch_hours": 24,
+ "runtime": "local-fallback (in-process queue + StreamProcessor)",
+ "baseline": {
+  "batches": 183,
+  "msgs": 87840,
+  "wall_s": 417.25450971500004,
+  "msgs_per_s": 210.5189948935433,
+  "bytes": 31932683,
+  "gb_per_hour": 0.2755096856317269,
+  "batch_ms": {
+   "p50": 2267.753876000029,
+   "p95": 2370.485903099987,
+   "p99": 2530.2305332799983
+  },
+  "feature_ms": {
+   "p50": 1314.4910220000554,
+   "p95": 1386.5511083000456,
+   "p99": 1457.5089094799162
+  },
+  "infer_ms": {
+   "p50": 865.2275319998921,
+   "p95": 980.0399994999964,
+   "p99": 1018.5346571600168
+  },
+  "e2e_ms": {
+   "p50": 9041.0,
+   "p95": 9424.5,
+   "p99": 10313.800000000001
+  },
+  "alerts": 1272,
+  "dlq": 0,
+  "degraded": false
+ },
+ "chaos_window_batches": 31,
+ "chaos": {
+  "duplicate": {
+   "crashed": false,
+   "msgs_in": 15213,
+   "dlq": 333,
+   "dlq_reasons": {
+    "duplicate": 333
+   },
+   "alerts": 384,
+   "alerts_identical_to_baseline": true,
+   "duplicate_alert_events": 0
+  },
+  "corrupt": {
+   "crashed": false,
+   "msgs_in": 14880,
+   "dlq": 333,
+   "dlq_reasons": {
+    "schema/range": 333
+   },
+   "alerts": 383,
+   "alerts_identical_to_baseline": false,
+   "duplicate_alert_events": 0
+  },
+  "out_of_order": {
+   "crashed": false,
+   "msgs_in": 14880,
+   "dlq": 0,
+   "dlq_reasons": {},
+   "alerts": 384,
+   "alerts_identical_to_baseline": true,
+   "duplicate_alert_events": 0
+  },
+  "delayed": {
+   "crashed": false,
+   "msgs_in": 14846,
+   "dlq": 299,
+   "dlq_reasons": {
+    "late beyond watermark": 299
+   },
+   "alerts": 383,
+   "alerts_identical_to_baseline": false,
+   "duplicate_alert_events": 0
+  },
+  "missing": {
+   "crashed": false,
+   "msgs_in": 14880,
+   "dlq": 0,
+   "dlq_reasons": {},
+   "alerts": 383,
+   "alerts_identical_to_baseline": false,
+   "duplicate_alert_events": 0
+  },
+  "outage": {
+   "crashed": false,
+   "msgs_in": 13440,
+   "dlq": 0,
+   "dlq_reasons": {},
+   "alerts": 342,
+   "alerts_identical_to_baseline": false,
+   "duplicate_alert_events": 0
+  },
+  "kill_restart": {
+   "killed_after_batch": 18,
+   "restored_from_batch": 15,
+   "alerts_equal_to_uninterrupted": true,
+   "duplicate_alert_events": 0,
+   "lost_alerts": 0,
+   "catch_up_seconds": 38.78891122699997
+  }
+ }
+}

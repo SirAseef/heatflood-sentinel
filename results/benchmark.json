@@ -1,0 +1,30 @@
+{
+ "daily": {
+  "models": [
+   "climatology",
+   "lstm",
+   "persistence",
+   "sarima",
+   "xgboost"
+  ],
+  "rows": 501200,
+  "test_period": [
+   "2022-01-01 00:00:00",
+   "2022-12-24 00:00:00"
+  ]
+ },
+ "hourly": {
+  "models": [
+   "climatology",
+   "diurnal_persistence",
+   "lstm",
+   "persistence",
+   "xgboost"
+  ],
+  "rows": 5241600,
+  "test_period": [
+   "2022-01-01 00:00:00",
+   "2022-12-30 23:00:00"
+  ]
+ }
+}

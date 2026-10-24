@@ -1,0 +1,10 @@
+# Column mapping for PMD station files (FR-DI-05). Adapter disabled unless PMD_DATA_PATH is set.
+columns:
+  station_id: [station_id, StationID, "Station Code"]
+  station_name: [station_name, Station, "Station Name"]
+  date: [date, Date, DATE]
+  tmax_c: [tmax, Tmax, "Max Temp"]
+  tmin_c: [tmin, Tmin, "Min Temp"]
+  prcp_mm: [prcp, Rainfall, "Rain (mm)"]
+units: {tmax_c: C, tmin_c: C, prcp_mm: mm}
+valid_ranges: {tmax_c: [-40, 55], tmin_c: [-40, 55], prcp_mm: [0, 500]}

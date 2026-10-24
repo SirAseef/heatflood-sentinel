@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live Feed · HeatFlood Sentinel</title><link rel="stylesheet" href="/static/styles/tokens.css"><link rel="stylesheet" href="/static/styles/app.css">
+<script src="/static/js/charts.js"></script><script src="/static/js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-12"><h2>Current conditions — 20 reference cities <span id="gen" class="chip live"></span></h2>
+<p class="sub">Open-Meteo <b>current</b> weather (15-min) · click a city for its 7-day history + 72-h forecast. History = ERA5 archive where available (≈5-day lag), else the forecast model's own analysis.</p><div class="citygrid" id="cities"></div></div></section>
+<section class="grid"><div class="card glass span-8"><h2 id="ctitle">City detail</h2><p class="sub">Solid: observed/analysis; dashed: 72-h forecast. Yellow line = now.</p><div id="tchart" class="chart"></div><div id="pchart" class="chart" style="margin-top:12px"></div></div>
+<div class="card glass span-4"><h2>Live hazard checks</h2><p class="sub">Same detectors and alert engine as the replay stream, plus forecast rules.</p><div id="checks"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Forecast heat check (next 3 PKT days)</h2><p class="sub">Forecast daily Tmax vs each city's calendar-day 95th percentile (train period 2015–2020). 3 consecutive exceedances = heatwave definition.</p><div id="hottable"></div></div></section>
+<script>
+shell('live', 'Live Feed', 'Real-time Open-Meteo feed → stream processor → live hazard checks (refresh with `make live`).', '<span class="chip live">LIVE · NOT ERA5</span><span class="chip">no API key</span>');
+(async () => {
+  const s = await api('/live').catch(() => null);
+  if (!s) { $('#cities').innerHTML = '<p class="muted">No live snapshot. Run <code>make live</code>.</p>'; return; }
+  $('#gen').textContent = 'updated ' + pkt(s.generated_utc);
+  const k = (cls, label, value, note) => `<div class="kpi glass span-3 ${cls}"><span class="label">${label}</span><span class="value">${value}</span><span class="note">${note}</span></div>`;
+  const hot = s.cities.reduce((a, c) => Math.max(a, c.current.temperature_2m ?? -99), -99), hc = s.cities.find(c => c.current.temperature_2m === hot);
+  const wet = s.cities.reduce((a, c) => Math.max(a, c.forecast_max_rain_24h_mm), 0);
+  $('#kpis').innerHTML = k('heat', 'Hottest city now', fmt(hot, 1) + '<small> °C</small>', hc.city) + k('flood', 'Max 24-h rain forecast', fmt(wet, 1) + '<small> mm</small>', 'next 72 h, any city') +
+    k('ok', 'Events streamed', s.events_streamed.toLocaleString(), 'sink: ' + s.sink) + k('violet', 'Latest ERA5 hour', s.era5_latest ? s.era5_latest.slice(0, 13).replace('T', ' ') + 'Z' : '–', 'archive lag ≈5 days');
+  const show = c => {
+    document.querySelectorAll('.citycard').forEach(x => x.classList.toggle('sel', x.dataset.c === c.city));
+    $('#ctitle').textContent = c.city + ' — ' + c.province;
+    const n = c.series.n_obs, T = c.series.time.map((t, i) => [t, c.series.t2m[i]]), P = c.series.time.map((t, i) => [t, c.series.tp[i]]);
+    const now = c.series.time[n - 1];
+    HFS_CHARTS.lineChart($('#tchart'), [{ name: 'observed', label: '2 m temperature (obs/analysis)', color: '#FF9A4D', points: T.slice(0, n) },
+      { name: 'forecast', label: 'forecast (72 h)', color: '#FF3D3D', dash: '5 4', points: T.slice(n - 1) }], { height: 220, vline: now, ylabel: '°C' });
+    HFS_CHARTS.lineChart($('#pchart'), [{ name: 'p', type: 'bar', label: 'hourly precipitation (mm)', color: '#38BDF8', points: P }], { height: 140, vline: now, ymin: 0, ylabel: 'mm/h' });
+    const al = c.open_alerts.length ? c.open_alerts.map(a => `${sev(a.level)} ${a.hazard} since ${a.first_issued.slice(0, 10)}`).join('<br>') : sev(0) + ' no open alerts';
+    $('#checks').innerHTML = `<div class="metricrow" style="flex-direction:column">
+      <div class="metric">Heatwave prob. (XGBoost, lead 1 d)<b>${fmt(c.heatwave_prob_model)}</b> <span class="muted">day ${c.heatwave_eval_day || '–'}</span></div>
+      <div class="metric">Flash-flood prob. (XGBoost, lead 6 h)<b>${fmt(c.flood_prob_model)}</b></div>
+      <div class="metric">Forecast hot days ≥ p95 (72 h)<b>${c.forecast_hot_days_above_p95}</b></div>
+      <div class="metric">Forecast max rain 6 h / 24 h<b>${fmt(c.forecast_max_rain_6h_mm, 1)} / ${fmt(c.forecast_max_rain_24h_mm, 1)} mm</b></div>
+      <div class="metric">Flood thresholds 6 h p99 / 24 h p99.5<b>${fmt(Math.max(50, c.flood_thresholds.tp6_p99), 1)} / ${fmt(c.flood_thresholds.tp24_p995, 1)} mm</b></div>
+      <div class="metric">Forecast flood rule triggered<b>${c.forecast_flood_rule ? 'YES' : 'no'}</b></div></div><div style="margin-top:8px">${al}</div>
+      <p class="muted" style="font-size:11.5px">Current: ${fmt(c.current.temperature_2m, 1)} °C, RH ${fmt(c.current.relative_humidity_2m, 0)}%, wind ${fmt(c.current.wind_speed_10m, 0)} km/h at ${c.current.time}Z.</p>`;
+  };
+  $('#cities').innerHTML = s.cities.map(c => { const lvl = Math.max(0, ...c.open_alerts.map(a => a.level));
+    return `<div class="citycard" data-c="${c.city}" tabindex="0"><div style="display:flex;justify-content:space-between"><b>${c.city}</b>${sev(lvl)}</div>
+    <div class="temp">${fmt(c.current.temperature_2m, 1)}°</div><div class="muted" style="font-size:11.5px">RH ${fmt(c.current.relative_humidity_2m, 0)}% · rain ${fmt(c.current.precipitation, 1)} mm</div>
+    <div class="muted" style="font-size:11.5px;margin-top:6px">heat p ${fmt(c.heatwave_prob_model)} · flood p ${fmt(c.flood_prob_model)}</div>
+    <div class="bar" style="margin-top:6px"><span style="width:${100 * (c.heatwave_prob_model ?? 0)}%;background:linear-gradient(90deg,var(--heat-from),var(--heat-to))"></span></div></div>`; }).join('');
+  document.querySelectorAll('.citycard').forEach(x => { x.onclick = () => show(s.cities.find(c => c.city === x.dataset.c)); x.onkeydown = e => { if (e.key === 'Enter') x.onclick(); }; });
+  show(s.cities.slice().sort((a, b) => (b.current.temperature_2m ?? 0) - (a.current.temperature_2m ?? 0))[0]);
+  const rows = s.cities.map(c => ({ city: c.city, ...Object.fromEntries(c.forecast_tmax.map((d, i) => ['d' + i, d])), hot: c.forecast_hot_days_above_p95 }));
+  const days = s.cities[0].forecast_tmax.map(d => d.day);
+  $('#hottable').innerHTML = table(rows, [{ k: 'city', label: 'City' }, ...days.map((d, i) => ({ k: 'd' + i, label: d, num: 1, f: v => v ? `<span style="color:${v.tmax > v.p95 ? 'var(--emergency)' : 'inherit'}">${fmt(v.tmax, 1)}</span> <span class="muted">/ ${fmt(v.p95, 1)}</span>` : '–' })), { k: 'hot', label: 'Days ≥ p95', num: 1 }], { max: 520 });
+})();
+</script></body></html>

@@ -1,0 +1,2 @@
+event_id,hazard,start_date,end_date,location,province,lat,lon,source,source_url,notes
+TEMPLATE-001,heatwave,YYYY-MM-DD,YYYY-MM-DD,City or district,Sindh,0.0,0.0,NDMA|PDMA|EM-DAT|ReliefWeb,https://...,Fill with curated records for validation overlays

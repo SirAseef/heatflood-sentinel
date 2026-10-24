@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data Explorer · HeatFlood Sentinel</title><link rel="stylesheet" href="/static/styles/tokens.css"><link rel="stylesheet" href="/static/styles/app.css">
+<script src="/static/js/charts.js"></script><script src="/static/js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-7"><h2>Dataset catalogue (medallion zones)</h2><p class="sub">Bronze = raw ERA5 point/grid files; Silver = cleaned + QC; Gold = features, labels, predictions. sha256 over first 2 MB.</p><div id="cat"></div></div>
+<div class="card glass span-5"><h2>Quality control</h2><p class="sub">QC bitmask counts on 1.4 M hourly rows (range, spike, stuck, duplicate, gap, missing).</p><div id="qc"></div><h2 style="margin-top:14px">Label prevalence</h2><div id="prev"></div></div></section>
+<section class="grid"><div class="card glass span-8"><h2>Monthly climate signal <select id="mcity" style="float:right"></select></h2><p class="sub">Mean daily Tmax (line) and monthly precipitation total (bars), 2015–2022 ERA5.</p><div id="monthly" class="chart"></div></div>
+<div class="card glass span-4"><h2>Coverage</h2><p class="sub">Daily rows per city.</p><div id="cov"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Sample rows — silver.city_daily</h2><div id="sample"></div></div></section>
+<script>
+shell('data', 'Data Explorer', 'ERA5 2015–2022 for 20 cities + a 2° grid (2015–2022): catalogue, QC, coverage and labels.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
+(async () => {
+  const [cat, q, s, f] = await Promise.all([api('/data/catalog'), api('/data/quality'), api('/data/sample?n=15'), api('/pipeline/status')]);
+  const fs = f.features;
+  const k = (cls, label, value, note) => `<div class="kpi glass span-3 ${cls}"><span class="label">${label}</span><span class="value">${value}</span><span class="note">${note}</span></div>`;
+  $('#kpis').innerHTML = k('ok', 'Hourly rows (silver)', fs.hourly_rows.toLocaleString(), fs.cities + ' cities · ' + fs.start.slice(0, 10) + ' → ' + fs.end.slice(0, 10)) + k('violet', 'Feature columns', fs.n_hourly_features, 'spec hash ' + fs.feature_spec_hash) +
+    k('heat', 'Heatwave days (test)', fs.label_prevalence.heatwave_percentile.sum.test, pct(fs.label_prevalence.heatwave_percentile.mean.test) + ' of city-days in 2022') + k('flood', 'Flood-risk windows (test)', fs.label_prevalence.ff_p995_24h.sum.test, 'p995_24h proxy, 6-h windows');
+  $('#cat').innerHTML = table(cat, [{ k: 'zone', label: 'Zone' }, { k: 'dataset', label: 'Dataset' }, { k: 'rows', label: 'Rows', num: 1, f: x => x ? x.toLocaleString() : '–' }, { k: 'bytes', label: 'MB', num: 1, f: x => (x / 1e6).toFixed(1) }, { k: 'sha256_16', label: 'sha256', f: x => `<span class="mono">${x}</span>` }], { max: 380 });
+  $('#qc').innerHTML = table(Object.entries(q.qc).map(([k, v]) => ({ k, v })), [{ k: 'k', label: 'Rule' }, { k: 'v', label: 'Flagged', num: 1, f: x => x.toLocaleString() }]);
+  const lp = q.label_prevalence; $('#prev').innerHTML = table(Object.entries(lp).map(([k, v]) => ({ k, train: v.sum.train, val: v.sum.val, test: v.sum.test, rate: v.mean.test })), [{ k: 'k', label: 'Label' }, { k: 'train', label: 'Train', num: 1 }, { k: 'val', label: 'Val', num: 1 }, { k: 'test', label: 'Test', num: 1 }, { k: 'rate', label: 'Test rate', num: 1, f: x => pct(x, 2) }]);
+  const cities = await api('/cities'); $('#mcity').innerHTML = '<option value="">All cities</option>' + cities.map(c => `<option>${c.city}</option>`).join('');
+  const dm = async () => { const d = await api('/data/monthly' + ($('#mcity').value ? '?entity=' + encodeURIComponent($('#mcity').value) : ''));
+    const scale = Math.max(...d.map(r => r.tp)) / Math.max(...d.map(r => r.tmax));
+    HFS_CHARTS.lineChart($('#monthly'), [{ name: 'tp', type: 'bar', label: `precipitation (scaled ÷${scale.toFixed(1)})`, color: '#38BDF8', points: d.map(r => [r.month + '-15', r.tp / scale]) }, { name: 'tmax', label: 'mean daily Tmax (°C)', color: '#FF9A4D', width: 2, points: d.map(r => [r.month + '-15', r.tmax]) }], { height: 260, ymin: 0 }); };
+  $('#mcity').onchange = dm; dm();
+  $('#cov').innerHTML = table(q.coverage, [{ k: 'entity_id', label: 'City' }, { k: 'count', label: 'Days', num: 1 }], { max: 260 });
+  $('#sample').innerHTML = table(s, Object.keys(s[0]).map(k => ({ k, label: k, num: typeof s[0][k] === 'number', f: v => typeof v === 'number' ? fmt(v, 2) : (v || '').toString().slice(0, 19) })));
+})();
+</script></body></html>

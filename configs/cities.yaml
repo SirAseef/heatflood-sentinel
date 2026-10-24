@@ -1,0 +1,22 @@
+# 20 reference cities (SRS 6.1). Coordinates in decimal degrees; province used for per-region reporting.
+cities:
+  Karachi:         {lat: 24.86, lon: 67.01, province: Sindh}
+  Lahore:          {lat: 31.55, lon: 74.34, province: Punjab}
+  Islamabad:       {lat: 33.68, lon: 73.05, province: ICT}
+  Rawalpindi:      {lat: 33.60, lon: 73.05, province: Punjab}
+  Peshawar:        {lat: 34.01, lon: 71.58, province: KP}
+  Quetta:          {lat: 30.18, lon: 66.99, province: Balochistan}
+  Multan:          {lat: 30.16, lon: 71.52, province: Punjab}
+  Jacobabad:       {lat: 28.28, lon: 68.44, province: Sindh}
+  Hyderabad:       {lat: 25.39, lon: 68.37, province: Sindh}
+  Faisalabad:      {lat: 31.42, lon: 73.08, province: Punjab}
+  Sukkur:          {lat: 27.70, lon: 68.86, province: Sindh}
+  Larkana:         {lat: 27.56, lon: 68.21, province: Sindh}
+  Dera Ghazi Khan: {lat: 30.06, lon: 70.64, province: Punjab}
+  Bahawalpur:      {lat: 29.40, lon: 71.68, province: Punjab}
+  Sialkot:         {lat: 32.49, lon: 74.53, province: Punjab}
+  Gilgit:          {lat: 35.92, lon: 74.31, province: GB}
+  Skardu:          {lat: 35.30, lon: 75.63, province: GB}
+  Gwadar:          {lat: 25.13, lon: 62.33, province: Balochistan}
+  Turbat:          {lat: 26.00, lon: 63.05, province: Balochistan}
+  Mardan:          {lat: 34.20, lon: 72.04, province: KP}

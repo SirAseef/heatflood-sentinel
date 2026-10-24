@@ -1,0 +1,4 @@
+FROM bitnami/spark:3.5
+USER root
+RUN pip install --no-cache-dir pandas pyarrow pyyaml pydantic xgboost scikit-learn requests
+USER 1001

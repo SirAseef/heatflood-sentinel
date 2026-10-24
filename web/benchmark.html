@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Benchmark Arena · HeatFlood Sentinel</title><link rel="stylesheet" href="/static/styles/tokens.css"><link rel="stylesheet" href="/static/styles/app.css">
+<script src="/static/js/charts.js"></script><script src="/static/js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><div class="controls"><label>Track <select id="track"><option value="daily">Daily — Tmax & precipitation, leads 1–7 d (RQ2 core)</option><option value="hourly">Hourly — T2m & precipitation, leads 1/6/24 h</option></select></label>
+<label>Variable <select id="var"></select></label></div>
+<h2>Skill vs lead time</h2><p class="sub">RMSE on the held-out 2022 test year, all 20 cities pooled, identical rows for every model.</p><div id="curve" class="chart"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Leaderboard <span class="chip">click a lead</span></h2><p class="sub" id="lbsub"></p><div class="controls"><label>Lead <select id="lead"></select></label></div><div id="lb"></div></div>
+<div class="card glass span-5"><h2>Skill score vs persistence</h2><p class="sub">SS = 1 − MSE<sub>model</sub>/MSE<sub>persistence</sub> (higher is better).</p><div id="ss" class="chart"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Significance (Diebold–Mariano + block bootstrap, Holm-adjusted)</h2><p class="sub">Significant = Holm p &lt; 0.05 <b>and</b> the 95% CI of the RMSE difference excludes 0 (SRS 8.4).</p><div id="sig"></div></div>
+<div class="card glass span-5"><h2>Per-region RMSE (fairness)</h2><p class="sub">Selected lead; weaker regions stay visible instead of being averaged away.</p><div id="region"></div></div></section>
+<section class="grid"><div class="card glass span-6"><h2>ConvLSTM — gridded 6-h forecasts</h2><p class="sub">2° ERA5 lattice (7×8 cells), test 2022, RMSE per lead.</p><div id="grid" class="chart"></div></div>
+<div class="card glass span-6"><h2>LSTM seed robustness (daily)</h2><p class="sub">RMSE mean ± std over seeds (42, 7, 2024).</p><div id="seeds"></div></div></section>
+<script>
+shell('benchmark', 'Benchmark Arena', 'SARIMA · XGBoost · LSTM · ConvLSTM vs persistence and climatology (RQ2).', '<span class="chip real">REAL ERA5 · TEST 2022</span>');
+(async () => {
+  const cache = {}; const get = async t => cache[t] = cache[t] || await api('/benchmarks?track=' + t);
+  const vars = { daily: [['tmax', 'Daily Tmax (°C)'], ['tp', 'Daily precipitation (mm)']], hourly: [['t2m', '2 m temperature (°C)'], ['tp', 'Hourly precipitation (mm)']] };
+  async function draw() {
+    const t = $('#track').value, v = $('#var').value, b = await get(t);
+    const lb = b.leaderboard.filter(r => r.var === v), models = [...new Set(lb.map(r => r.model))];
+    HFS_CHARTS.lineChart($('#curve'), models.map(m => ({ name: m, dots: true, width: m === 'lstm' ? 2.4 : 1.6, points: lb.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 260, xfmt: x => '+' + x + (t === 'daily' ? 'd' : 'h'), ylabel: 'RMSE' });
+    const leads = [...new Set(lb.map(r => r.horizon))]; if (!$('#lead').options.length || $('#lead').dataset.t !== t + v) { $('#lead').innerHTML = leads.map(l => `<option>${l}</option>`).join(''); $('#lead').dataset.t = t + v; }
+    const L = +$('#lead').value, rows = lb.filter(r => r.horizon === L).sort((a, b) => a.rmse - b.rmse);
+    $('#lbsub').textContent = `${rows[0]?.n ?? 0} forecast–observation pairs per model at lead +${L}.`;
+    const extra = v === 'tp' ? (t === 'daily' ? [{ k: 'csi_ge10', label: 'CSI≥10mm', num: 1, f: fmt }, { k: 'pod_ge10', label: 'POD≥10', num: 1, f: fmt }] : [{ k: 'csi_ge0.5', label: 'CSI≥0.5mm', num: 1, f: fmt }]) : [{ k: 'mape', label: 'MAPE %', num: 1, f: fmt }];
+    $('#lb').innerHTML = table(rows, [{ k: 'model', label: 'Model', f: m => `<span style="color:${HFS_CHARTS.MODEL_COLORS[m]}">●</span> ${m}` }, { k: 'rmse', label: 'RMSE', num: 1, f: fmt }, { k: 'mae', label: 'MAE', num: 1, f: fmt }, { k: 'nse', label: 'NSE', num: 1, f: x => fmt(x, 3) },
+      { k: 'ss_vs_climatology', label: 'SS clim', num: 1, f: x => fmt(x, 3) }, { k: 'rmse_extreme_top5', label: 'RMSE top-5%', num: 1, f: fmt }, ...extra], { best: (r, i) => i === 0 });
+    const ss = rows.filter(r => r.model !== 'persistence').map(r => ({ label: r.model, value: r.ss_vs_persistence, color: HFS_CHARTS.MODEL_COLORS[r.model] }));
+    HFS_CHARTS.barChart($('#ss'), ss, { left: 130 });
+    const sig = b.significance.filter(r => r.var === v);
+    $('#sig').innerHTML = table(sig, [{ k: 'horizon', label: 'Lead', num: 1 }, { k: 'model_a', label: 'A' }, { k: 'model_b', label: 'B' }, { k: 'rmse_diff_a_minus_b', label: 'ΔRMSE (A−B)', num: 1, f: x => fmt(x, 3) },
+      { k: 'ci_lo', label: '95% CI', num: 1, f: (x, r) => `[${fmt(r.ci_lo, 3)}, ${fmt(r.ci_hi, 3)}]` }, { k: 'dm_stat', label: 'DM', num: 1, f: fmt }, { k: 'p_holm', label: 'p (Holm)', num: 1, f: x => x < 1e-4 ? '<1e-4' : fmt(x, 4) },
+      { k: 'winner', label: 'Winner', f: (x, r) => r.significant ? `<b style="color:${HFS_CHARTS.MODEL_COLORS[x]}">${x}</b>` : '<span class="muted">n.s.</span>' }], { max: 380 });
+    const regs = Object.keys(rows[0] || {}).filter(k => k.startsWith('rmse_') && !k.includes('extreme'));
+    $('#region').innerHTML = table(regs.map(k => ({ region: k.replace('rmse_', ''), ...Object.fromEntries(rows.map(r => [r.model, r[k]])) })), [{ k: 'region', label: 'Region' }, ...rows.map(r => ({ k: r.model, label: r.model, num: 1, f: fmt }))]);
+    const gr = b.grid.filter(r => r.var === (v === 'tmax' ? 't2m' : v));
+    HFS_CHARTS.lineChart($('#grid'), [...new Set(gr.map(r => r.model))].map(m => ({ name: m, dots: true, points: gr.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 220, xfmt: x => '+' + x + 'h', ylabel: 'RMSE' });
+    const sd = (await get('daily')).seeds.filter(r => r.var === (t === 'daily' ? v : 'tmax'));
+    $('#seeds').innerHTML = table(sd, [{ k: 'horizon', label: 'Lead (d)', num: 1 }, { k: 'mean', label: 'RMSE mean', num: 1, f: x => fmt(x, 3) }, { k: 'std', label: '± std', num: 1, f: x => fmt(x, 3) }, { k: 'count', label: 'seeds', num: 1 }]);
+  }
+  const setV = () => { $('#var').innerHTML = vars[$('#track').value].map(v => `<option value="${v[0]}">${v[1]}</option>`).join(''); };
+  $('#track').onchange = () => { setV(); draw(); }; $('#var').onchange = draw; $('#lead').onchange = draw; setV(); draw();
+})();
+</script></body></html>
