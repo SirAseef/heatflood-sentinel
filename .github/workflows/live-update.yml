@@ -1,0 +1,66 @@
+name: Live site update
+
+# Publishes the HeatFlood Sentinel live snapshot to the static site on the gh-pages branch
+# (https://siraseef.github.io/heatflood-sentinel/) every 6 hours and on demand.
+# Runs hfs.streaming.live_feed from this branch's code: Open-Meteo forecast/current + ERA5 archive ->
+# per-city NWP->ERA5 bias correction -> local streaming fallback (no Kafka) -> alert engine -> api/live.json.
+# Uses only the built-in GITHUB_TOKEN; Open-Meteo needs no API key. Does not touch CI.
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # 00:17, 06:17, 12:17, 18:17 UTC (05:17, 11:17, 17:17, 23:17 PKT)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: live-site-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out site (gh-pages)
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+
+      - name: Check out code (this commit)
+        uses: actions/checkout@v4
+        with:
+          path: code
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install live-path dependencies (no torch needed)
+        run: pip install "numpy>=1.26" "pandas>=2.1" "pyarrow>=14" "pyyaml>=6" "requests>=2.31" "xgboost>=2.0" "pydantic>=2.5" "xarray>=2024.1" "scipy>=1.11"
+
+      - name: Run live feed and regenerate JSON
+        env:
+          PYTHONWARNINGS: ignore
+        run: |
+          export HFS_CODE_SHA=$(git -C code rev-parse HEAD)
+          python site/tools/update_live.py code
+
+      - name: Commit snapshot to gh-pages
+        working-directory: site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api/live.json api/live_history.json api/summary.json api/build_info.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "live: snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do git pull --rebase origin gh-pages && git push origin HEAD:gh-pages && break; sleep 5; done
+
+      - name: Request a Pages build (best effort)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "Pages build request not permitted; the push itself triggers a build."
