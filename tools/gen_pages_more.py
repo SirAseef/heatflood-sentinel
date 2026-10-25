@@ -393,13 +393,13 @@ shell('data', 'Data & Methodology', 'ERA5 2015–2022 for 20 cities + a 2° grid
 RESEARCH_BODY = """
 <section class="grid"><div class="card glass span-12"><h2>Publications & theses</h2><p class="sub">Manuscripts are listed with their real status. Drafts are not posted publicly until submission/acceptance.</p>
 <div class="pub"><span class="status">MS thesis · in progress</span><h3>Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan</h3>
-<div class="meta">Aseef Ahmed (DS-029/2025/26) · Supervisor: Dr. Maria Andaleeb Siddiqui · MS Data Science, NED University of Engineering and Technology, Karachi</div>
+<div class="meta">Aseef Ahmed (DS-029/2025/26) · Supervisor: Dr. Maria Andaleeb Siddiqui · MS Data Science, Department of Computer Science and Information Technology, NED University of Engineering and Technology, Karachi</div>
 <p class="prose">Software artefact: HeatFlood Sentinel v0.1.0 (this site and the code repository). The results chapters are generated from the repository's result files.</p></div>
 <div class="pub"><span class="status prep">IEEE manuscript · in preparation</span><h3>Big Data Analytics and Deep Learning for Heatwave and Flash-Flood Forecasting and Detection: A Systematic Literature Review</h3>
-<div class="meta">Aseef Ahmed, Maria Andaleeb Siddiqui · IEEE format · PRISMA 2020 methodology</div></div>
+<div class="meta">Aseef Ahmed · Department of Computer Science and Information Technology, NED UET · IEEE format · PRISMA 2020 methodology</div></div>
 <div class="pub"><span class="status prep">IEEE manuscript · in preparation</span><h3>Literature Review: Big Data and Deep Learning for Heatwave and Flash-Flood Forecasting and Detection in Pakistan</h3>
-<div class="meta">Aseef Ahmed, Maria Andaleeb Siddiqui · IEEE format · narrative review (thesis-oriented)</div></div>
-<p class="muted" style="font-size:12px">Author order on the manuscripts is indicative and subject to the authors' final decision.</p></div></section>
+<div class="meta">Aseef Ahmed · Supervisor: Dr. Maria Andaleeb Siddiqui · Department of Computer Science and Information Technology, NED UET · IEEE format · narrative review (thesis-oriented)</div></div>
+</div></section>
 <section class="grid"><div class="card glass span-7"><h2>Abstract (software artefact)</h2><div class="prose" id="abs"></div></div>
 <div class="card glass span-5"><h2>Cite the software</h2><p class="sub">From <code>CITATION.cff</code> in the repository.</p><pre class="code" id="cite"></pre>
 <h2 style="margin-top:12px">Key findings at a glance</h2><ul class="prose" id="find"></ul></div></section>
@@ -472,10 +472,10 @@ ABOUT_BODY = """
 <section class="grid"><div class="card glass span-12 hero" style="padding:26px"><div class="eyebrow">About the project</div><h2 style="font-size:clamp(20px,2.4vw,30px)">HeatFlood Sentinel — an MS Data Science thesis artefact from NED University, Karachi</h2>
 <p class="lead">An end-to-end, reproducible research system for heatwave and flash-flood forecasting and detection in Pakistan: real ERA5 data, deep and classical models benchmarked with significance tests, a streaming alert engine and a public dashboard.</p></div></section>
 <section class="grid">
-<div class="card glass span-4"><h2>Student</h2><div class="prose"><p><b>Aseef Ahmed</b><br>MS Data Science (DS-029/2025/26)<br>NED University of Engineering and Technology, Karachi</p>
+<div class="card glass span-4"><h2>Student</h2><div class="prose"><p><b>Aseef Ahmed</b><br>MS Data Science (DS-029/2025/26)<br>Department of Computer Science and Information Technology<br>NED University of Engineering and Technology, Karachi</p>
 <p>Design, implementation, experiments, dashboard and thesis.</p><p><a href="https://github.com/SirAseef">github.com/SirAseef</a><br><a href="https://www.linkedin.com/in/aseef-ahmed-6ab6b7196">LinkedIn</a></p></div></div>
 <div class="card glass span-4"><h2>Supervisor</h2><div class="prose"><p><b>Dr. Maria Andaleeb Siddiqui</b><br>Thesis supervisor<br>NED University of Engineering and Technology, Karachi</p><p>Research direction, scope and review.</p></div></div>
-<div class="card glass span-4"><h2>Institution</h2><div class="prose"><p><b>NED University of Engineering and Technology</b><br>Karachi, Pakistan</p><p>MS Data Science programme. The thesis follows the university's Advanced Studies & Research Board (ASRB) format.</p></div></div></section>
+<div class="card glass span-4"><h2>Institution</h2><div class="prose"><p><b>NED University of Engineering and Technology</b><br>Karachi, Pakistan</p><p>Department of Computer Science and Information Technology (CSIT), MS Data Science programme. The thesis follows the university's Advanced Studies & Research Board (ASRB) format.</p></div></div></section>
 <section class="grid"><div class="card glass span-7"><h2>How this site is hosted</h2><div class="prose">
 <p><b>Static site on GitHub Pages</b> (the <a href="https://github.com/SirAseef/heatflood-sentinel/tree/gh-pages"><code>gh-pages</code> branch</a> of the code repository). There is no backend server.</p>
 <ul><li><b>The REST API is not hosted.</b> The FastAPI service (<code>/api/v1</code>, SSE alert stream, token-protected acknowledge / bulletin / live-refresh) runs only locally (<code>make api</code>). Its read-only responses were exported once to JSON files under <code>api/</code> with FastAPI's TestClient, and a small adapter in the page answers the dashboard's API calls from those files. See <a href="api.html">API Docs</a>.</li>
