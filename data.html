@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data & Methodology · HeatFlood Sentinel</title><meta name="description" content="ERA5 data catalogue, QC, hazard definitions, limitations and thesis alignment.">
+<meta property="og:title" content="Data & Methodology · HeatFlood Sentinel"><meta property="og:description" content="ERA5 data catalogue, QC, hazard definitions, limitations and thesis alignment.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-7"><h2>Dataset catalogue (medallion zones)</h2><p class="sub">Bronze = raw ERA5 point/grid files; Silver = cleaned + QC; Gold = features, labels, predictions. sha256 over the first 2 MB.</p><div id="cat"></div></div>
+<div class="card glass span-5"><h2>Quality control</h2><p class="sub">QC bitmask counts on the hourly rows (range, spike, stuck, duplicate, gap, missing).</p><div id="qc"></div><h2 style="margin-top:14px">Label prevalence</h2><div id="prev"></div></div></section>
+<section class="grid"><div class="card glass span-8"><h2>Monthly climate signal <select id="mcity" style="float:right"></select></h2><p class="sub">Mean daily Tmax (line) and monthly precipitation total (bars, scaled), 2015–2022 ERA5.</p><div id="monthly" class="chart"></div></div>
+<div class="card glass span-4"><h2>Coverage</h2><p class="sub">Daily rows per city.</p><div id="cov"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Sample rows — silver.city_daily</h2><div id="sample"></div></div></section>
+<section class="grid"><div class="card glass span-6"><h2>Hazard definitions (configs/hazards.yaml)</h2><div class="prose">
+<p><b>Heatwave</b>: daily Tmax &gt; local calendar-day 95th percentile (±7-day window, fitted on the training years) for ≥ 3 consecutive days. Alternative: Tmax ≥ 40 °C for ≥ 3 days.</p>
+<p><b>Flash-flood risk (PROXY)</b>: default 6-h total ≥ max(50 mm, local p99) and antecedent precipitation index &gt; local p75; alternative 24-h total ≥ local p99.5. ERA5 does not observe floods — these are reanalysis proxies.</p>
+<p><b>Alert levels</b>: Normal &lt; 0.30 ≤ Advisory &lt; 0.55 ≤ Watch &lt; 0.75 ≤ Warning &lt; 0.90 ≤ Emergency, with persistence/rain conditions, 2-step hysteresis and 3-h cooldown.</p>
+<p><b>Splits</b>: time-only — train 2015–2020, validation 2021, test 2022. Climatologies and thresholds use training years only.</p></div></div>
+<div class="card glass span-6"><h2>Limitations</h2><ul class="prose">
+<li>Reanalysis is not observation; ERA5 (~25 km) cannot resolve convective cells or urban drainage.</li>
+<li>Flood labels are proxies without hydrological routing; validate against NDMA/PDMA event records.</li>
+<li>dev-lite results (8 years, 20 cities, 2° grid) are indicative; the full profile (1991–2025, 0.25° grid) needs a workstation or cluster.</li>
+<li>Streaming latencies were measured with the local streaming fallback on a 2-vCPU sandbox, not on a Kafka/Spark cluster.</li>
+<li>PMD station data not yet available (agreement pending) — adapter implemented and tested on synthetic PMD-like files only.</li>
+<li>The Live page uses Open-Meteo's forecast model (bias-corrected toward ERA5), not ERA5, for the most recent ~5 days and the 72-h outlook.</li></ul></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Thesis alignment — objectives and research questions → implementation</h2><div id="align"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Data licences & attribution</h2><ul class="prose">
+<li>ERA5 hourly single levels — Copernicus Climate Change Service (C3S) / ECMWF, Copernicus licence; accessed through the Open-Meteo historical archive (models=era5).</li>
+<li>Open-Meteo forecast/current API — CC BY 4.0, free for non-commercial use.</li><li>Country boundary — Natural Earth (public domain) via world.geo.json.</li>
+<li>Software: PyTorch, XGBoost, statsmodels, scikit-learn, pandas, xarray, FastAPI.</li></ul></div></section>
+<script>
+shell('data', 'Data & Methodology', 'ERA5 2015–2022 for 20 cities + a 2° grid: catalogue, QC, coverage, labels, definitions and limitations.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
+(async () => {
+  const [cat, q, s, f] = await Promise.all([api('/data/catalog'), api('/data/quality'), api('/data/sample?n=15'), api('/pipeline/status')]);
+  const fs = f.features;
+  $('#kpis').innerHTML = kpi('ok', 'Hourly rows (silver)', fs.hourly_rows.toLocaleString(), fs.cities + ' cities · ' + fs.start.slice(0, 10) + ' → ' + fs.end.slice(0, 10)) + kpi('violet', 'Feature columns', fs.n_hourly_features, 'spec hash ' + fs.feature_spec_hash) +
+    kpi('heat', 'Heatwave days (test)', fs.label_prevalence.heatwave_percentile.sum.test, pct(fs.label_prevalence.heatwave_percentile.mean.test) + ' of city-days in 2022') + kpi('flood', 'Flood-risk windows (test)', fs.label_prevalence.ff_p995_24h.sum.test, 'p995_24h proxy, 6-h windows');
+  $('#cat').innerHTML = table(cat, [{ k: 'zone', label: 'Zone' }, { k: 'dataset', label: 'Dataset' }, { k: 'rows', label: 'Rows', num: 1, f: x => x ? x.toLocaleString() : '–' }, { k: 'bytes', label: 'MB', num: 1, f: x => (x / 1e6).toFixed(1) }, { k: 'sha256_16', label: 'sha256', f: x => `<span class="mono">${x}</span>` }], { max: 380 });
+  $('#qc').innerHTML = table(Object.entries(q.qc).map(([k, v]) => ({ k, v })), [{ k: 'k', label: 'Rule' }, { k: 'v', label: 'Flagged', num: 1, f: x => x.toLocaleString() }]);
+  $('#prev').innerHTML = table(Object.entries(q.label_prevalence).map(([k, v]) => ({ k, train: v.sum.train, val: v.sum.val, test: v.sum.test, rate: v.mean.test })), [{ k: 'k', label: 'Label' }, { k: 'train', label: 'Train', num: 1 }, { k: 'val', label: 'Val', num: 1 }, { k: 'test', label: 'Test', num: 1 }, { k: 'rate', label: 'Test rate', num: 1, f: x => pct(x, 2) }]);
+  const cities = await api('/cities'); $('#mcity').innerHTML = '<option value="">All cities</option>' + cities.map(c => `<option>${c.city}</option>`).join('');
+  const dm = async () => { const d = await api('/data/monthly' + ($('#mcity').value ? '?entity=' + encodeURIComponent($('#mcity').value) : ''));
+    const scale = Math.max(...d.map(r => r.tp)) / Math.max(...d.map(r => r.tmax));
+    HFS_CHARTS.lineChart($('#monthly'), [{ name: 'tp', type: 'bar', label: `precipitation (scaled ÷${scale.toFixed(1)})`, color: '#38BDF8', points: d.map(r => [r.month + '-15', r.tp / scale]) }, { name: 'tmax', label: 'mean daily Tmax (°C)', color: '#FF9A4D', width: 2, points: d.map(r => [r.month + '-15', r.tmax]) }], { height: 260, ymin: 0 }); };
+  $('#mcity').onchange = dm; dm();
+  $('#cov').innerHTML = table(q.coverage, [{ k: 'entity_id', label: 'City', f: cityLink }, { k: 'count', label: 'Days', num: 1 }], { max: 260 });
+  $('#sample').innerHTML = table(s, Object.keys(s[0]).map(k => ({ k, label: k, num: typeof s[0][k] === 'number', f: v => typeof v === 'number' ? fmt(v, 2) : (v || '').toString().slice(0, 19) })));
+  const rows = [
+   ['O3', 'Distributed ingestion / preprocessing / storage of ERA5 (+PMD) T2m and precipitation', 'hfs.ingestion.{era5,open_meteo,pmd_adapter,replay_simulator}, hfs.features.pipeline, docker-compose (Kafka, Spark)', 'Data & Methodology, Streaming'],
+   ['O4', 'LSTM + ConvLSTM prototype and detection module', 'hfs.models.{lstm,convlstm}, hfs.training.{hourly,daily,grid,detection}', 'Benchmarks, Heatwave, Flash-Flood'],
+   ['O5', 'Compare LSTM/ConvLSTM vs SARIMA/XGBoost', 'hfs.benchmark.{runner,metrics,stats_tests}', 'Model Benchmarks'],
+   ['O6', 'Scalability, throughput, fault tolerance', 'hfs.benchmark.scalability, hfs.streaming.local_stream (chaos + kill/restart)', 'Streaming & Scalability'],
+   ['RQ1', 'State of the art (SLR) → design choices', 'docs/architecture.md; IEEE SLR manuscript', 'Architecture, Research'],
+   ['RQ2', 'Significant multi-step gains (RMSE, MAE, NSE)?', 'Diebold–Mariano (HLN) + block bootstrap + Holm → results/tables/significance_*.csv', 'Model Benchmarks'],
+   ['RQ3', 'Near-real-time detection: latency, GB/h, F1, CSI, FAR', 'hfs.streaming.{processor,alert_engine,latency}, results/streaming_local.json, detection_test.csv', 'Streaming, Detection, Live'],
+   ['RQ4', 'Scaling with volume / configuration; PMD deployment implications', 'results/scalability_local.json, docs/evaluation.md', 'Streaming & Scalability']];
+  $('#align').innerHTML = table(rows.map(r => ({ id: r[0], stmt: r[1], code: r[2], ui: r[3] })), [{ k: 'id', label: 'ID' }, { k: 'stmt', label: 'Objective / question', f: v => `<span style="white-space:normal">${v}</span>` }, { k: 'code', label: 'Implementation', f: v => `<code style="white-space:normal">${v}</code>` }, { k: 'ui', label: 'Page' }]);
+})();
+</script></body></html>

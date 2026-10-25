@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API Docs · HeatFlood Sentinel</title><meta name="description" content="Static OpenAPI view of the HeatFlood Sentinel REST API.">
+<meta property="og:title" content="API Docs · HeatFlood Sentinel"><meta property="og:description" content="Static OpenAPI view of the HeatFlood Sentinel REST API.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><div class="note"><b>Not hosted:</b> this site is static (GitHub Pages). The FastAPI service below runs locally with <code>make api</code> (http://127.0.0.1:8000, interactive docs at <code>/docs</code>). For this site, the read-only GET responses were pre-rendered to JSON with FastAPI's TestClient and are linked as <b>static mirrors</b>; POST endpoints (login, acknowledge, live refresh) and the SSE stream are not available here.</div></div></section>
+<section class="grid"><div class="card glass span-12"><h2 id="apititle">REST API</h2><p class="sub" id="apidesc"></p><div class="controls"><label>Filter <input id="q" placeholder="e.g. alerts, forecasts" style="min-width:220px"></label></div><div id="eps"></div></div></section>
+<script>
+shell('api', 'API Docs', 'Static OpenAPI view of the HeatFlood Sentinel REST API (base path /api/v1).', '<span class="chip">OpenAPI 3</span><span class="chip">NOT HOSTED · STATIC MIRRORS</span>');
+(async () => {
+  const o = await api('/openapi');
+  $('#apititle').textContent = `${o.info.title} · v${o.info.version}`; $('#apidesc').textContent = o.info.description || '';
+  const MIRROR = { '/api/v1/summary': 'summary.json', '/api/v1/live': 'live.json', '/api/v1/cities': 'cities.json', '/api/v1/alerts': 'alerts.json', '/api/v1/alerts/{alert_id}': 'alert_narratives.json',
+    '/api/v1/benchmarks': 'benchmarks_daily.json', '/api/v1/explain/global': 'explain_global.json', '/api/v1/explain/saliency': 'saliency.json', '/api/v1/models': 'models.json',
+    '/api/v1/pipeline/status': 'pipeline_status.json', '/api/v1/pipeline/metrics': 'pipeline_metrics.json', '/api/v1/scalability/results': 'scalability.json', '/api/v1/data/catalog': 'data_catalog.json',
+    '/api/v1/data/quality': 'data_quality.json', '/api/v1/data/sample': 'data_sample.json', '/api/v1/data/monthly': 'monthly.json', '/api/v1/cases': 'cases.json', '/api/v1/cases/{case_id}/replay': 'cases/heat-2022.json',
+    '/api/v1/detections': 'detections/heatwave_1d.json', '/api/v1/forecasts': 'forecasts/daily/jacobabad.json' };
+  const ref = s => s && s.$ref ? s.$ref.split('/').pop() : (s && s.type) || '';
+  const eps = Object.entries(o.paths).flatMap(([p, ops]) => Object.entries(ops).map(([verb, op]) => ({ p, verb, op })));
+  const render = () => { const q = ($('#q').value || '').toLowerCase();
+    $('#eps').innerHTML = eps.filter(e => !q || e.p.toLowerCase().includes(q) || (e.op.summary || '').toLowerCase().includes(q)).map(({ p, verb, op }) => {
+      const params = (op.parameters || []).map(x => `<tr><td class="mono">${x.name}</td><td>${x.in}</td><td>${x.required ? 'yes' : ''}</td><td class="mono">${esc(ref(x.schema) || (x.schema && x.schema.anyOf ? x.schema.anyOf.map(ref).join(' | ') : ''))}</td><td class="mono">${x.schema && x.schema.default !== undefined ? esc(JSON.stringify(x.schema.default)) : ''}</td></tr>`).join('');
+      const body = op.requestBody ? `<p>Request body: <span class="mono">${esc(ref((Object.values(op.requestBody.content || {})[0] || {}).schema))}</span></p>` : '';
+      const sec = op.security ? '<p>Requires a bearer token (role-based).</p>' : (/ack|bulletin|refresh/.test(p) ? '<p>Requires a bearer token (analyst/admin role).</p>' : '');
+      const mir = MIRROR[p] && verb === 'get' ? `<p>Static mirror: <a href="api/${MIRROR[p]}">api/${MIRROR[p]}</a></p>` : (verb === 'get' && p.includes('stream') ? '<p>Server-sent events — replayed client-side on the Home page instead.</p>' : '<p class="muted">No static mirror (needs the running API).</p>');
+      return `<details class="endpoint"><summary><span class="verb ${verb}">${verb.toUpperCase()}</span><span class="pth">${esc(p)}</span><span class="muted">${esc(op.summary || '')}</span></summary><div class="body">${op.description ? '<p>' + esc(op.description) + '</p>' : ''}
+        ${params ? `<div class="scroll dense"><table><thead><tr><th>Parameter</th><th>In</th><th>Required</th><th>Type</th><th>Default</th></tr></thead><tbody>${params}</tbody></table></div>` : '<p>No parameters.</p>'}${body}${sec}${mir}</div></details>`; }).join(''); };
+  $('#q').oninput = render; render();
+})();
+</script></body></html>

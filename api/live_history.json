@@ -1,0 +1,15 @@
+[
+{
+"generated_utc": "2026-10-25T06:59:32+00:00",
+"events_streamed": 19340,
+"era5_latest": "2026-10-19 23:00:00",
+"forecast_host": "https://api.open-meteo.com/v1/forecast",
+"open_alerts": 2,
+"max_level": 2,
+"hottest_city": "Turbat",
+"hottest_c": 35.7,
+"mean_temp_c": 27.87,
+"max_rain_24h_fc_mm": 3.5,
+"run": "initial build"
+}
+]

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Explainability · HeatFlood Sentinel</title><meta name="description" content="SHAP drivers and ConvLSTM saliency for HeatFlood Sentinel.">
+<meta property="og:title" content="Explainability · HeatFlood Sentinel"><meta property="og:description" content="SHAP drivers and ConvLSTM saliency for HeatFlood Sentinel.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><div class="controls"><label>Detector <select id="det"></select></label><label>Season <select id="season"><option value="global">All test data</option><option value="pre_monsoon">Pre-monsoon (AMJ)</option><option value="monsoon">Monsoon (JAS)</option><option value="winter_other">Winter / other</option></select></label></div>
+<h2>Global SHAP importance</h2><p class="sub">Mean |SHAP| on the 2022 test set — exact TreeSHAP from XGBoost.</p><div id="bars" class="chart"></div><p class="muted" id="add"></p></div></section>
+<section class="grid"><div class="card glass span-6"><h2>Why did this alert fire?</h2><p class="sub">Per-alert local explanation (top signed SHAP contributions) and generated narrative.</p><select id="alert" style="width:100%;margin-bottom:10px"></select><div id="local" class="chart"></div><p class="prose" id="narr"></p></div>
+<div class="card glass span-6"><h2>ConvLSTM spatial saliency</h2><p class="sub">|gradient × input| aggregated over time and channels for the hottest 2022 test origin.</p><div id="sal" class="chart"></div><p class="muted" id="saltime"></p></div></section>
+<script>
+shell('explain', 'Explainability', 'SHAP drivers for the detection models and ConvLSTM spatial saliency.', '<span class="chip real">REAL ERA5</span>');
+(async () => {
+  const x = await api('/explain/global'), keys = Object.keys(x);
+  $('#det').innerHTML = keys.map(k => `<option>${k}</option>`).join('');
+  const draw = () => { const e = x[$('#det').value], s = $('#season').value, d = s === 'global' ? e.global : (e.by_season[s] || {});
+    const heat = $('#det').value.startsWith('heat'); HFS_CHARTS.barChart($('#bars'), Object.entries(d).slice(0, 15).map(([k, v]) => ({ label: k, value: v })), { left: 190, width: 900, from: heat ? '#FF9A4D' : '#38BDF8', to: heat ? '#FF3D3D' : '#2563EB', fmt: v => v.toFixed(4) });
+    $('#add').textContent = 'TreeSHAP additivity check: max |Σφ − margin| = ' + e.shap_additivity_max_err.toExponential(2); };
+  $('#det').onchange = draw; $('#season').onchange = draw; draw();
+  const al = (await api('/alerts?level=2&limit=3000')).filter(a => ['created', 'escalated'].includes(a.action)).slice(-80).reverse();
+  $('#alert').innerHTML = al.map(a => `<option value="${a.alert_id}|${a.issue_time}">${a.issue_time.slice(0, 13)}Z · ${a.entity_id} · ${a.hazard} · ${LEVELS[a.level]}</option>`).join('');
+  const showA = async () => { const [id, t] = $('#alert').value.split('|'); const a = await api('/alerts/' + id); const ev = a.timeline.find(e => e.issue_time === t) || a;
+    HFS_CHARTS.barChart($('#local'), ev.drivers.map(d => ({ label: `${d.feature} = ${d.value}`, value: d.shap, color: d.shap > 0 ? '#FF6B3D' : '#38BDF8' })), { left: 230, width: 620, fmt: v => (v > 0 ? '+' : '') + v.toFixed(3) });
+    $('#narr').textContent = a.narrative + ' (red = pushes risk up, blue = pushes it down; values in log-odds).'; };
+  $('#alert').onchange = showA; if (al.length) showA();
+  const s = await api('/explain/saliency');
+  if (s.saliency) { HFS_CHARTS.heatmap($('#sal'), s.saliency, s.lat, s.lon, { cell: 52, palette: [[11, 18, 38], [124, 92, 255], [34, 211, 238], [255, 255, 255]], labels: false }); $('#saltime').textContent = 'Origin: ' + s.saliency_time + ' UTC'; }
+})();
+</script></body></html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cities · HeatFlood Sentinel</title><meta name="description" content="Twenty reference cities: live conditions and 2022 hazard statistics.">
+<meta property="og:title" content="Cities · HeatFlood Sentinel"><meta property="og:description" content="Twenty reference cities: live conditions and 2022 hazard statistics.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><h2>20 reference cities <span id="gen" class="chip live"></span></h2><p class="sub">Live conditions from the latest snapshot. Each card opens the city's page.</p><div class="citygrid" id="cards"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Held-out 2022: hazards by city</h2><p class="sub">Labelled heatwave days and flash-flood-risk windows (ERA5, test year 2022), XGBoost hits, and alert events the streaming replay raised (level ≥ Watch, created/escalated).</p><div id="stats"></div></div></section>
+<script>
+shell('cities', 'Cities', 'Twenty reference cities across Sindh, Punjab, KP, Balochistan, GB and ICT.', '<span class="chip live">LIVE</span><span class="chip real">ERA5 2015–2022</span>');
+(async () => {
+  const [s, cities, hw, ff, al] = await Promise.all([api('/live').catch(() => null), api('/cities'), api('/detections?hazard=heatwave&lead=1d'), api('/detections?hazard=flash_flood&lead=6h'), api('/alerts?limit=100000')]);
+  if (s) $('#gen').textContent = 'updated ' + pkt(s.generated_utc);
+  const L = Object.fromEntries((s ? s.cities : []).map(c => [c.city, c]));
+  $('#cards').innerHTML = cities.map(ci => { const c = L[ci.city], l = c ? maxLevel(c) : 0;
+    return `<a class="citycard" style="text-decoration:none;color:inherit" href="${cityHref(ci.city)}"><div style="display:flex;justify-content:space-between;gap:6px"><b>${ci.city}</b>${sev(l)}</div>
+    <div class="temp">${c ? fmt(c.current.temperature_2m, 1) + '°' : '–'}</div><div class="muted" style="font-size:11.5px">${ci.province} · ${ci.lat.toFixed(2)}°N ${ci.lon.toFixed(2)}°E</div>
+    <div class="muted" style="font-size:11.5px;margin-top:6px">heat p ${c ? fmt(c.heatwave_prob_model) : '–'} · flood p ${c ? fmt(c.flood_prob_model) : '–'}</div></a>`; }).join('');
+  const agg = {}; cities.forEach(c => agg[c.city] = { city: c.city, province: c.province, hwd: 0, hwhit: 0, ffw: 0, ffhit: 0, al: 0 });
+  hw.forEach(r => { if (r.label) { agg[r.entity_id].hwd++; if (r.predicted_flag) agg[r.entity_id].hwhit++; } });
+  ff.forEach(r => { if (r.label) { agg[r.entity_id].ffw++; if (r.predicted_flag) agg[r.entity_id].ffhit++; } });
+  al.filter(a => a.level >= 2 && ['created', 'escalated'].includes(a.action)).forEach(a => agg[a.entity_id] && agg[a.entity_id].al++);
+  $('#stats').innerHTML = table(Object.values(agg).sort((a, b) => b.hwd - a.hwd), [{ k: 'city', label: 'City', f: cityLink }, { k: 'province', label: 'Province' }, { k: 'hwd', label: 'Heatwave days (label)', num: 1 },
+    { k: 'hwhit', label: 'XGB hits (1 d)', num: 1 }, { k: 'ffw', label: 'Flood-risk windows (label)', num: 1 }, { k: 'ffhit', label: 'XGB hits (6 h)', num: 1 }, { k: 'al', label: 'Replay alerts ≥ Watch', num: 1 }]);
+})();
+</script></body></html>

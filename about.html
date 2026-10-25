@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About & Team · HeatFlood Sentinel</title><meta name="description" content="About HeatFlood Sentinel: student, supervisor, NED University; hosting and disclaimer.">
+<meta property="og:title" content="About & Team · HeatFlood Sentinel"><meta property="og:description" content="About HeatFlood Sentinel: student, supervisor, NED University; hosting and disclaimer.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12 hero" style="padding:26px"><div class="eyebrow">About the project</div><h2 style="font-size:clamp(20px,2.4vw,30px)">HeatFlood Sentinel — an MS Data Science thesis artefact from NED University, Karachi</h2>
+<p class="lead">An end-to-end, reproducible research system for heatwave and flash-flood forecasting and detection in Pakistan: real ERA5 data, deep and classical models benchmarked with significance tests, a streaming alert engine and a public dashboard.</p></div></section>
+<section class="grid">
+<div class="card glass span-4"><h2>Student</h2><div class="prose"><p><b>Aseef Ahmed</b><br>MS Data Science (DS-029/2025/26)<br>NED University of Engineering and Technology, Karachi</p>
+<p>Design, implementation, experiments, dashboard and thesis.</p><p><a href="https://github.com/SirAseef">github.com/SirAseef</a><br><a href="https://www.linkedin.com/in/aseef-ahmed-6ab6b7196">LinkedIn</a></p></div></div>
+<div class="card glass span-4"><h2>Supervisor</h2><div class="prose"><p><b>Dr. Maria Andaleeb Siddiqui</b><br>Thesis supervisor<br>NED University of Engineering and Technology, Karachi</p><p>Research direction, scope and review.</p></div></div>
+<div class="card glass span-4"><h2>Institution</h2><div class="prose"><p><b>NED University of Engineering and Technology</b><br>Karachi, Pakistan</p><p>MS Data Science programme. The thesis follows the university's Advanced Studies & Research Board (ASRB) format.</p></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>How this site is hosted</h2><div class="prose">
+<p><b>Static site on GitHub Pages</b> (the <a href="https://github.com/SirAseef/heatflood-sentinel/tree/gh-pages"><code>gh-pages</code> branch</a> of the code repository). There is no backend server.</p>
+<ul><li><b>The REST API is not hosted.</b> The FastAPI service (<code>/api/v1</code>, SSE alert stream, token-protected acknowledge / bulletin / live-refresh) runs only locally (<code>make api</code>). Its read-only responses were exported once to JSON files under <code>api/</code> with FastAPI's TestClient, and a small adapter in the page answers the dashboard's API calls from those files. See <a href="api.html">API Docs</a>.</li>
+<li><b>The live snapshot is real and scheduled.</b> A GitHub Actions workflow on the code repository's <code>main</code> branch runs every 6 hours: it checks out the code and this site, runs <code>hfs.streaming.live_feed</code> (Open-Meteo forecast/current + ERA5 archive, per-city NWP-to-ERA5 bias correction, trained detectors, alert engine) and commits <code>api/live.json</code> to <code>gh-pages</code>. If Open-Meteo is unreachable, the previous snapshot stays in place — nothing is synthesised.</li>
+<li><b>Kafka / Spark were not executed.</b> Both the published results and the live job use the <b>local streaming fallback</b> (same <code>StreamProcessor</code>).</li>
+<li>Historical pages (forecasts, detection, benchmarks, streaming) show the held-out 2022 test-year outputs of release v0.1.0 and do not change between live updates.</li></ul></div></div>
+<div class="card glass span-5"><h2>Build & live status</h2><div id="status"></div><h2 style="margin-top:14px">Links</h2><ul class="prose">
+<li><a href="https://github.com/SirAseef/heatflood-sentinel">Source code</a> · <a href="https://github.com/SirAseef/heatflood-sentinel/releases/tag/v0.1.0">release v0.1.0</a></li>
+<li><a href="https://github.com/SirAseef/heatflood-sentinel/actions/workflows/live-update.yml">Live-update workflow runs</a></li><li><a href="architecture.html">Architecture & reproducibility</a></li></ul></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Disclaimer</h2><p class="prose">HeatFlood Sentinel is a research prototype and <b>not an official warning system</b>. Always follow the Pakistan Meteorological Department (PMD), NDMA and the provincial PDMAs. Flash-flood outputs are reanalysis proxies. Data: Copernicus ERA5 (C3S/ECMWF) via Open-Meteo; Open-Meteo forecast data under CC BY 4.0 (non-commercial).</p></div></section>
+<script>
+shell('about', 'About & Team', 'Student, supervisor, institution, hosting and disclaimer.', '<span class="chip">v0.1.0</span>');
+(async () => { const [b, s, h] = await Promise.all([api('/build'), api('/live').catch(() => null), api('/live/history').catch(() => [])]);
+  $('#status').innerHTML = table([['Code release', `<a href="${b.code_repo}/releases/tag/${b.code_release}">${b.code_release}</a>`], ['Code commit (export)', `<span class="mono">${(b.code_commit || '').slice(0, 10)}</span>`],
+    ['Latest live snapshot', s ? pkt(s.generated_utc) + ' (' + ago(s.generated_utc) + ')' : '–'], ['Snapshot produced by', s ? (s.published_by || 'manual build') : '–'], ['Live updates recorded', h.length], ['Streaming sink', s ? s.sink : '–']].map(([k, v]) => ({ k, v })), [{ k: 'k', label: 'Item' }, { k: 'v', label: 'Value' }]); })();
+</script></body></html>
