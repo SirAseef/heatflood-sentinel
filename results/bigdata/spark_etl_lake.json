@@ -1,0 +1,102 @@
+{
+  "tag": "lake",
+  "application_id": "application_1792965347508_0009",
+  "master": "yarn",
+  "spark_version": "3.5.9",
+  "app_name": "hfs-spark-etl-lake",
+  "default_parallelism": 4,
+  "years_filter": null,
+  "years_present": [
+    1990,
+    1991,
+    1992,
+    1993,
+    1994,
+    1995,
+    1996,
+    1997,
+    1998,
+    1999,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "hourly_rows": 3111696,
+  "daily_rows": 129614,
+  "cities": 20,
+  "start": "1990-01-01 00:00:00",
+  "end": "2022-12-31 23:00:00",
+  "train_end": "2020-12-31",
+  "feature_spec_hash": "836de2011c195237",
+  "label_prevalence_daily": {
+    "gap": {
+      "heatwave": 1025,
+      "heatwave_absolute": 6839,
+      "n": 71194
+    },
+    "test": {
+      "heatwave": 686,
+      "heatwave_absolute": 870,
+      "n": 7300
+    },
+    "train": {
+      "heatwave": 1068,
+      "heatwave_absolute": 4596,
+      "n": 43820
+    },
+    "val": {
+      "heatwave": 329,
+      "heatwave_absolute": 620,
+      "n": 7300
+    }
+  },
+  "label_prevalence_ff6h": {
+    "test": {
+      "ff_proxy_6h_api": 2,
+      "ff_p995_24h": 373,
+      "n": 29200
+    },
+    "gap": {
+      "ff_proxy_6h_api": 44,
+      "ff_p995_24h": 1703,
+      "n": 284856
+    },
+    "train": {
+      "ff_proxy_6h_api": 16,
+      "ff_p995_24h": 787,
+      "n": 175360
+    },
+    "val": {
+      "ff_proxy_6h_api": 1,
+      "ff_p995_24h": 58,
+      "n": 29200
+    }
+  },
+  "hdfs_outputs": {
+    "silver/city_hourly": "hdfs://localhost:9000/heatflood/lake/silver/city_hourly",
+    "silver/city_daily": "hdfs://localhost:9000/heatflood/lake/silver/city_daily",
+    "gold/climatology_hourly_t2m": "hdfs://localhost:9000/heatflood/lake/gold/climatology_hourly_t2m",
+    "gold/climatology_hourly_tp": "hdfs://localhost:9000/heatflood/lake/gold/climatology_hourly_tp",
+    "gold/climatology_daily_tmax": "hdfs://localhost:9000/heatflood/lake/gold/climatology_daily_tmax",
+    "gold/flash_flood_6h": "hdfs://localhost:9000/heatflood/lake/gold/flash_flood_6h",
+    "gold/city_features_daily": "hdfs://localhost:9000/heatflood/lake/gold/city_features_daily",
+    "gold/city_features_hourly": "hdfs://localhost:9000/heatflood/lake/gold/city_features_hourly"
+  },
+  "timings_s": {
+    "silver_hourly": 86.2,
+    "silver_daily": 8.8,
+    "climatology": 14.2,
+    "flash_flood_labels": 30.5,
+    "daily_features": 19.1,
+    "hourly_features": 278.1,
+    "summary": 7.7
+  },
+  "seconds_total": 456.1,
+  "export": "data/gold_spark/lake",
+  "export_seconds": 47.4
+}

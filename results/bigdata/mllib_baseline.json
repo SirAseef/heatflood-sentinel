@@ -1,0 +1,140 @@
+{
+  "application": {
+    "application_id": "application_1792965347508_0004",
+    "master": "yarn",
+    "spark_version": "3.5.9",
+    "app_name": "hfs-mllib-baseline-parity_2015_2022",
+    "default_parallelism": 4
+  },
+  "tag": "parity_2015_2022",
+  "split": {
+    "train": [
+      "2015-01-01",
+      "2020-12-31"
+    ],
+    "val": [
+      "2021-01-01",
+      "2021-12-31"
+    ],
+    "test": [
+      "2022-01-01",
+      "2022-12-31"
+    ]
+  },
+  "seed": 42,
+  "gbt_regressor_tmax_h1": {
+    "target": "daily tmax at t+1 day (degC)",
+    "features": 68,
+    "rows_eligible": {
+      "train": 43800,
+      "val": 7280,
+      "test": 7280
+    },
+    "rows_used_after_dropna": {
+      "train": 43520,
+      "val": 7280,
+      "test": 7280
+    },
+    "params": {
+      "maxIter": 100,
+      "maxDepth": 6,
+      "stepSize": 0.1,
+      "subsamplingRate": 0.8,
+      "featureSubsetStrategy": "0.8",
+      "minInstancesPerNode": 3,
+      "maxBins": 64
+    },
+    "fit_seconds": 156.4,
+    "test_rmse": 1.9256721460711477,
+    "test_mae": 1.4354545015804399,
+    "test_bias": -0.11384252086129892,
+    "persistence_rmse_same_rows": 1.901716947555542,
+    "n_test": 7280,
+    "reference_xgboost_same_rows": {
+      "n": 7280,
+      "rmse": 1.8346117734909058,
+      "mllib_rmse_on_these_rows": 1.9256721460711477,
+      "max_abs_target_diff": 0.0
+    }
+  },
+  "gbt_classifier_heatwave_lead1d": {
+    "target": "heatwave label at t+1 day (percentile definition)",
+    "features": 66,
+    "rows_eligible": {
+      "train": 43800,
+      "val": 7280,
+      "test": 7280
+    },
+    "rows_used_after_dropna": {
+      "train": 43520,
+      "val": 7280,
+      "test": 7280
+    },
+    "params": {
+      "maxIter": 100,
+      "maxDepth": 5,
+      "stepSize": 0.1,
+      "subsamplingRate": 0.8,
+      "maxBins": 64
+    },
+    "fit_seconds": 71.7,
+    "test_positives": 551,
+    "n_test": 7280,
+    "test_roc_auc": 0.9468869877893967,
+    "test_pr_auc": 0.6179005924516341,
+    "val_roc_auc": 0.9169773996033751,
+    "test_brier": 0.05376294229793615,
+    "threshold_tuned_on_val": 0.15,
+    "far_cap": 0.5,
+    "test_at_tuned_threshold": {
+      "tp": 244,
+      "fp": 113,
+      "fn": 307,
+      "tn": 6616,
+      "pod": 0.44283121597096187,
+      "far": 0.3165266106442577,
+      "csi": 0.3674698795180723,
+      "f1": 0.5374449339207048
+    },
+    "test_at_0.5": {
+      "tp": 66,
+      "fp": 23,
+      "fn": 485,
+      "tn": 6706,
+      "pod": 0.11978221415607986,
+      "far": 0.25842696629213485,
+      "csi": 0.11498257839721254,
+      "f1": 0.20625
+    },
+    "reference_detection_full_json": [
+      {
+        "model": "rule_persistence",
+        "n": 7280,
+        "positives": 551,
+        "csi": 0.7165109034267912,
+        "pod": 0.8348457350272233,
+        "far": 0.16515426497277677,
+        "roc_auc": null,
+        "pr_auc": null,
+        "threshold": null
+      },
+      {
+        "model": "xgboost",
+        "n": 7280,
+        "positives": 551,
+        "csi": 0.35555555555555557,
+        "pod": 0.40653357531760437,
+        "far": 0.2607260726072607,
+        "roc_auc": 0.9429740276868628,
+        "pr_auc": 0.5890874873474886,
+        "threshold": 0.325
+      }
+    ]
+  },
+  "seconds_total": 265.6,
+  "notes": [
+    "MLlib GBTs cannot take missing values: rows with any null feature are dropped (first ~30 days per city in train).",
+    "maxIter=100, stepSize=0.1 instead of XGBoost's 300 trees (CPU/YARN budget); no isotonic calibration.",
+    "XGBoost reference numbers come from existing result files and are not recomputed here."
+  ]
+}

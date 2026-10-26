@@ -1,0 +1,85 @@
+{
+  "tag": "parity_2015_2022",
+  "application_id": "application_1792965347508_0003",
+  "master": "yarn",
+  "spark_version": "3.5.9",
+  "app_name": "hfs-spark-etl-parity_2015_2022",
+  "default_parallelism": 4,
+  "years_filter": [
+    2015,
+    2022
+  ],
+  "years_present": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "hourly_rows": 1402560,
+  "daily_rows": 58420,
+  "cities": 20,
+  "start": "2015-01-01 00:00:00",
+  "end": "2022-12-31 23:00:00",
+  "train_end": "2020-12-31",
+  "feature_spec_hash": "836de2011c195237",
+  "label_prevalence_daily": {
+    "test": {
+      "heatwave": 551,
+      "heatwave_absolute": 870,
+      "n": 7300
+    },
+    "train": {
+      "heatwave": 593,
+      "heatwave_absolute": 4596,
+      "n": 43820
+    },
+    "val": {
+      "heatwave": 261,
+      "heatwave_absolute": 620,
+      "n": 7300
+    }
+  },
+  "label_prevalence_ff6h": {
+    "test": {
+      "ff_proxy_6h_api": 2,
+      "ff_p995_24h": 405,
+      "n": 29200
+    },
+    "train": {
+      "ff_proxy_6h_api": 17,
+      "ff_p995_24h": 929,
+      "n": 175360
+    },
+    "val": {
+      "ff_proxy_6h_api": 1,
+      "ff_p995_24h": 79,
+      "n": 29200
+    }
+  },
+  "hdfs_outputs": {
+    "silver/city_hourly": "hdfs://localhost:9000/heatflood/parity_2015_2022/silver/city_hourly",
+    "silver/city_daily": "hdfs://localhost:9000/heatflood/parity_2015_2022/silver/city_daily",
+    "gold/climatology_hourly_t2m": "hdfs://localhost:9000/heatflood/parity_2015_2022/gold/climatology_hourly_t2m",
+    "gold/climatology_hourly_tp": "hdfs://localhost:9000/heatflood/parity_2015_2022/gold/climatology_hourly_tp",
+    "gold/climatology_daily_tmax": "hdfs://localhost:9000/heatflood/parity_2015_2022/gold/climatology_daily_tmax",
+    "gold/flash_flood_6h": "hdfs://localhost:9000/heatflood/parity_2015_2022/gold/flash_flood_6h",
+    "gold/city_features_daily": "hdfs://localhost:9000/heatflood/parity_2015_2022/gold/city_features_daily",
+    "gold/city_features_hourly": "hdfs://localhost:9000/heatflood/parity_2015_2022/gold/city_features_hourly"
+  },
+  "timings_s": {
+    "silver_hourly": 58.3,
+    "silver_daily": 6.0,
+    "climatology": 10.5,
+    "flash_flood_labels": 13.7,
+    "daily_features": 14.0,
+    "hourly_features": 122.0,
+    "summary": 3.9
+  },
+  "seconds_total": 241.8,
+  "export": "data/gold_spark/parity_2015_2022",
+  "export_seconds": 18.2
+}

@@ -6,6 +6,8 @@ data/gold/
 data/external/*
 !data/external/events.csv
 data/stream_in/
+data/gold_spark/
+build/
 *.nc
 *.grib
 *.zarr/
