@@ -19,6 +19,8 @@
 **Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan**
 — the software artefact of an MS Data Science thesis at NED University of Engineering and Technology, Karachi.
 
+🎬 **Demo video (4:59):** [watch / download — 4K · 1080p · 720p](https://github.com/SirAseef/heatflood-sentinel/releases/tag/demo-video-2026-10) · [description & narration script](docs/demo/README.md)
+
 ## Abstract
 
 Pakistan faces recurring extreme heat (Jacobabad, upper Sindh) and monsoon flash floods, yet operational early-warning
