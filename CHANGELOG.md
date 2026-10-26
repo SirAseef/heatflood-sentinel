@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/),
 versioning: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+* Real Big Data path, no Docker (`src/hfs/bigdata/`, `scripts/bigdata/`, `make bigdata-*`, `docs/bigdata.md`): bronze
+  partitions -> HDFS; PySpark ETL on YARN (silver/gold, labels, features) with a column-level parity check against the
+  pandas gold; Spark MLlib GBT baselines; Kafka `hf-obs` -> Structured Streaming (`applyInPandasWithState`, HDFS
+  checkpoint) -> Kafka `hf-alerts` + Parquet, with throughput/latency/kill-and-restart benchmarks. Evidence in
+  `results/bigdata/` (RUN_LOG.md); caveats in DEVIATIONS D8. Existing v0.1.0 results are unchanged.
+
 ## [0.1.0] — 2026-10-24
 
 First public release, accompanying the MS Data Science thesis (NED UET).

@@ -1,0 +1,211 @@
+{
+  "throughput": {
+    "producer": {
+      "topic": "hf-obs",
+      "start": "2022-04-01",
+      "end": "2022-07-31",
+      "events": 58560,
+      "seconds": 2.56,
+      "rate_target": "max",
+      "rate_achieved_eps": 22832.3,
+      "first_event": "2022-04-01 00:00:00",
+      "last_event": "2022-07-31 23:00:00",
+      "cities": 20
+    },
+    "job_exit_code": 0,
+    "application_id": "application_1792965347508_0005",
+    "spark_batches": 3,
+    "rows_processed": 58560,
+    "sum_trigger_execution_s": 21.38,
+    "throughput_eps_processing": 2738.8,
+    "per_batch": [
+      {
+        "batchId": 0,
+        "numInputRows": 20000,
+        "triggerExecution_ms": 11621,
+        "processedRowsPerSecond": 1721.0
+      },
+      {
+        "batchId": 1,
+        "numInputRows": 20000,
+        "triggerExecution_ms": 4642,
+        "processedRowsPerSecond": 4308.5
+      },
+      {
+        "batchId": 2,
+        "numInputRows": 18560,
+        "triggerExecution_ms": 5119,
+        "processedRowsPerSecond": 3625.7
+      }
+    ],
+    "job_wall_seconds_incl_yarn_startup": 43.6,
+    "throughput_eps_wall_incl_startup": 1344.0,
+    "throughput_eps_first_to_last_batch": 2961.9
+  },
+  "environment": {
+    "cluster": "single-node pseudo-distributed: HDFS + YARN (1 NodeManager) + Kafka 3.9.2 KRaft (1 broker)",
+    "machine": "2 vCPU aarch64, 7.7 GB RAM, no swap; /tmp (YARN local dirs) RAM-backed",
+    "spark": "3.5.9 on YARN, client mode, 1 executor x 2 cores, 1 GB heap + 640 MB overhead",
+    "topics": {
+      "hf-obs": "4 partitions",
+      "hf-alerts": "1 partition"
+    },
+    "kafka_bootstrap": "127.0.0.1:9092"
+  },
+  "latency": {
+    "producer": {
+      "topic": "hf-obs",
+      "start": "2022-08-01",
+      "end": "2022-08-15",
+      "events": 7200,
+      "seconds": 72.0,
+      "rate_target": "100.0",
+      "rate_achieved_eps": 100.0,
+      "first_event": "2022-08-01 00:00:00",
+      "last_event": "2022-08-15 23:00:00",
+      "cities": 20
+    },
+    "application_id": "application_1792965347508_0006",
+    "trigger": "processingTime 1 second",
+    "events_in_sink": 7200,
+    "e2e_latency_ms_event_to_parquet_sink": {
+      "p50": 2772.0,
+      "p95": 5473.2,
+      "p99": 7313.1,
+      "mean": 2995.6,
+      "max": 8033.0,
+      "n": 7200
+    },
+    "latency_ms_event_to_state_update": {
+      "p50": 1658.5,
+      "p95": 3750.6,
+      "p99": 6090.3,
+      "mean": 1853.2,
+      "max": 7090.0,
+      "n": 7200
+    },
+    "alerts_on_kafka": 54,
+    "e2e_latency_ms_event_to_hf_alerts": {
+      "p50": 2322.5,
+      "p95": 3171.3,
+      "p99": 3316.6,
+      "mean": 2346.6,
+      "max": 3350.0,
+      "n": 54
+    },
+    "batches_with_data": 37,
+    "batch_trigger_execution_ms": {
+      "p50": 1759.0,
+      "p95": 2721.6,
+      "p99": 4501.8,
+      "mean": 1922.3,
+      "max": 5486.0,
+      "n": 37
+    },
+    "mean_rows_per_batch": 190.5,
+    "definition": "sink latency = driver wall clock when the micro-batch's Parquet+Kafka writes finished minus producer send time (t_ingest_ms); same host, same clock"
+  },
+  "kill_restart": {
+    "producer": {
+      "topic": "hf-obs",
+      "start": "2022-06-01",
+      "end": "2022-07-15",
+      "events": 21600,
+      "seconds": 86.4,
+      "rate_target": "250.0",
+      "rate_achieved_eps": 250.0,
+      "first_event": "2022-06-01 00:00:00",
+      "last_event": "2022-07-15 23:00:00",
+      "cities": 20
+    },
+    "rate_eps": 250.0,
+    "kill_after_s": 45.0,
+    "application_before_kill": "application_1792965347508_0007",
+    "application_after_restart": "application_1792965347508_0008",
+    "restart_exit_code": 0,
+    "rows_in_sink_before_kill": 9692,
+    "batches_before_kill": 15,
+    "restart_drain_seconds": 34.9,
+    "seconds_from_kill_to_restart": 43.0,
+    "meta_note": "run executed 22:31:07-22:33:10 UTC; the analysis step crashed on a tz-dtype merge and was re-run on the stored HDFS outputs; values here are taken from logs/bigdata/stream_bench.log (kill->restart time from log timestamps, +/-1 s)",
+    "replay_window": "2022-06-01..2022-07-15",
+    "kafka_end_offsets": {
+      "0": 6480,
+      "1": 4320,
+      "2": 4320,
+      "3": 6480
+    },
+    "kafka_total_events": 21600,
+    "sink_event_rows": 21600,
+    "sink_distinct_partition_offset": 21600,
+    "sink_missing_offsets": 0,
+    "sink_duplicate_rows": 0,
+    "exactly_once_parquet_sink": true,
+    "state_vs_offline_reference": {
+      "obs_rows_stream": 21600,
+      "obs_rows_reference": 21600,
+      "only_in_stream": 0,
+      "only_in_reference": 0,
+      "feature_diffs": {
+        "t2m": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "tp": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "t2m_rollmean24h": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "t2m_rollmax24h": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "tp_rollsum6h": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "tp_rollsum24h": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "api_h": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "hot_run": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "hw_level": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        },
+        "ff_level": {
+          "max_abs_diff": 0.0,
+          "null_mismatch": 0
+        }
+      },
+      "alerts_stream": 212,
+      "alerts_reference": 212,
+      "alerts_identical": true,
+      "alerts_only_stream": 0,
+      "alerts_only_reference": 0
+    },
+    "hf_alerts_topic": {
+      "messages": 254,
+      "duplicates_from_replayed_batch": 42,
+      "note": "Kafka sink is at-least-once; duplicates (if any) come from the batch that was in flight at the crash"
+    },
+    "batches_total": 17,
+    "stream_vs_batch_gold": {
+      "rows_compared": 21120,
+      "t2m_rollmean24h": 0.0,
+      "t2m_rollmax24h": 0.0,
+      "tp_rollsum6h": 0.0,
+      "tp_rollsum24h": 0.0
+    }
+  }
+}

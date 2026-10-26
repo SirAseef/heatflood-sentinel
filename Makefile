@@ -4,7 +4,9 @@ export PYTHONPATH := src
 export PYTHONWARNINGS := ignore
 
 .PHONY: setup up up-full down topics data data-cds sample features train train-hourly train-daily train-grid detect tune \
-        benchmark stream live scale chaos report screenshots reproduce demo api test lint typecheck e2e clean
+        benchmark stream live scale chaos report screenshots reproduce demo api test lint typecheck e2e clean \
+        bigdata-up bigdata-down bigdata-status bigdata-hdfs-load bigdata-etl bigdata-etl-parity bigdata-parity bigdata-mllib \
+        bigdata-stream-bench bigdata-test bigdata-all
 
 setup:            ## install Python deps (CPU) + dev tools, create .env
 	$(PY) -m pip install -r requirements-dev.txt
@@ -77,3 +79,33 @@ typecheck:
 e2e: screenshots
 clean:
 	rm -rf data/silver data/gold results/tables/*.csv logs .pytest_cache
+
+# ---------------------------------------------------------------- real Big Data path (HDFS + YARN + Spark + Kafka)
+# Single-node pseudo-distributed stack in $(BIGDATA_HOME); see results/bigdata/RUN_LOG.md and DEVIATIONS.md (D-BD).
+# The local fallback targets above (features / stream / scale) are unchanged and still work without the stack.
+BIGDATA_HOME ?= $(HOME)/bigdata
+BD_ENV = . $(BIGDATA_HOME)/env.sh && export PYTHONPATH=src:$$PYTHONPATH
+BD_SUBMIT = HFS_NUM_EXEC=1 HFS_EXEC_CORES=2 HFS_EXEC_MEM=1536m HFS_EXEC_OVH=640m scripts/bigdata/submit.sh
+
+bigdata-up:          ## start HDFS (NN+DN), YARN (RM+NM), Kafka KRaft
+	$(BIGDATA_HOME)/start-all.sh
+bigdata-down:        ## stop all daemons
+	$(BIGDATA_HOME)/stop-all.sh
+bigdata-status:
+	$(BIGDATA_HOME)/status.sh
+bigdata-hdfs-load:   ## upload every complete bronze partition (city=*/year=*) to hdfs:///heatflood/bronze/era5_hourly (incremental)
+	$(BD_ENV) && $(PY) -m hfs.bigdata.hdfs_load
+bigdata-etl:         ## Spark on YARN, ALL years present in HDFS -> hdfs:///heatflood/lake/{silver,gold} + data/gold_spark/lake
+	$(BD_ENV) && $(BD_SUBMIT) src/hfs/bigdata/spark_etl.py --years all --tag lake --export data/gold_spark/lake
+bigdata-etl-parity:  ## Spark on YARN, 2015-2022 only (thesis window) -> data/gold_spark/parity_2015_2022
+	$(BD_ENV) && $(BD_SUBMIT) src/hfs/bigdata/spark_etl.py --years 2015-2022 --tag parity_2015_2022 --export data/gold_spark/parity_2015_2022
+bigdata-parity:      ## Spark gold vs pandas gold, every table/column -> results/bigdata/parity_2015_2022.json
+	$(BD_ENV) && $(PY) -m hfs.bigdata.parity --spark data/gold_spark/parity_2015_2022 --out results/bigdata/parity_2015_2022.json
+bigdata-mllib:       ## MLlib GBTRegressor (Tmax +1 d) + GBTClassifier (heatwave +1 d) on YARN -> results/bigdata/mllib_baseline.json
+	$(BD_ENV) && $(BD_SUBMIT) src/hfs/bigdata/mllib_baseline.py --tag parity_2015_2022 --iters 100
+bigdata-stream-bench: ## Kafka hf-obs -> Structured Streaming on YARN -> hf-alerts + HDFS Parquet; throughput, latency, kill/restart
+	$(BD_ENV) && $(PY) -m hfs.bigdata.stream_bench throughput latency killrestart
+bigdata-test:        ## unit + parity + local-Spark tests for the Big Data path
+	$(BD_ENV) && $(PY) -m pytest -q tests/unit/test_bigdata_stream_state.py tests/unit/test_bigdata_partitions.py \
+	    tests/integration/test_bigdata_parity.py tests/integration/test_bigdata_spark_local.py
+bigdata-all: bigdata-up bigdata-hdfs-load bigdata-etl-parity bigdata-parity bigdata-mllib bigdata-stream-bench bigdata-etl

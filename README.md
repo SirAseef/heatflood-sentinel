@@ -3,8 +3,6 @@
 </p>
 
 <p align="center">
-  <a href="https://siraseef.github.io/heatflood-sentinel/"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-siraseef.github.io%2Fheatflood--sentinel-FF3D3D?logo=githubpages&logoColor=white"/></a>
-  <a href="https://github.com/SirAseef/heatflood-sentinel/actions/workflows/live-update.yml"><img alt="Live site update" src="https://github.com/SirAseef/heatflood-sentinel/actions/workflows/live-update.yml/badge.svg"/></a>
   <a href="https://github.com/SirAseef/heatflood-sentinel/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/SirAseef/heatflood-sentinel/actions/workflows/ci.yml/badge.svg"/></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-3776AB?logo=python&logoColor=white"/>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"/></a>
@@ -20,18 +18,6 @@
 
 **Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan**
 — the software artefact of an MS Data Science thesis at NED University of Engineering and Technology, Karachi.
-
-## Live demo
-
-**https://siraseef.github.io/heatflood-sentinel/** — a static, multi-page edition of the dashboard on GitHub Pages
-(home, live alerts map and table, one page per city, forecasts, heatwave and flash-flood detection, model benchmarks,
-streaming and scalability, architecture, data and methodology, Jacobabad case study, research, API docs, about).
-
-* The live snapshot is regenerated every 6 hours by [`live-update.yml`](.github/workflows/live-update.yml): it runs
-  `hfs.streaming.live_feed` (Open-Meteo forecast/current + ERA5 archive, per-city NWP→ERA5 bias correction, trained
-  detectors, alert engine via the local streaming fallback) and commits `api/live.json` to the `gh-pages` branch.
-* All other pages show the release v0.1.0 results (held-out test year 2022), exported from the FastAPI app as JSON.
-* The REST API itself is **not hosted** (static site); run it locally with `make api`. Kafka/Spark were not executed.
 
 ## Abstract
 
@@ -228,6 +214,7 @@ calendar-day p95; not a heatwave under an absolute 40 °C rule) and no alerts el
 | Real data | **ERA5 via the Open-Meteo archive** (`models=era5`) — every reported number |
 | Local fallback runtime | **Executed**: features, all training, benchmark, full stream replay + chaos, scalability, live feed, report, screenshots |
 | Kafka (KRaft) + Spark Structured Streaming | Provided via `docker compose` (`make up`, `make up-full`); **not executed in the sandbox** (no Docker daemon); CI builds the image |
+| HDFS + YARN + Spark (batch, MLlib, Structured Streaming) + Kafka, no Docker | **Executed 2026-10-26** on a single-node pseudo-distributed cluster (2 vCPU / 7.7 GB): bronze -> HDFS, Spark ETL on YARN with column-level parity to the pandas gold, MLlib baselines, Kafka -> Structured Streaming -> Kafka/HDFS with kill-and-restart exactly-once check — `make bigdata-*`, `docs/bigdata.md`, `results/bigdata/`, DEVIATIONS D8 |
 | Live feed | Executed against Open-Meteo; primary host hit its daily quota, fallback `previous-runs-api.open-meteo.com` used |
 | PMD station adapter | Implemented; **synthetic placeholder** input only |
 | Starter `.nc` files | **Synthetic** ERA5-like fields, used only for tests / offline demo, never for results |

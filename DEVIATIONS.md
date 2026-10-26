@@ -86,6 +86,9 @@ before it is quoted in the thesis. Each entry says what was done, why, and what 
   daemon). The compose file, Dockerfiles, Kafka producer/consumer and Spark job are provided and CI builds the image,
   but no Kafka/Spark latency or throughput figure is claimed. Scalability numbers are single-node (2 vCPU) process-level.
 * Delta Lake / MLflow (SRS) are replaced by Parquet medallion layers and JSON run records in `results/`.
+* **Update 2026-10-26:** a real (non-Docker) HDFS + YARN + Spark + Kafka stack has since been run on the same sandbox;
+  see **D8**. The statements above still describe the v0.1.0 numbers in `results/*.json` (unchanged); the new
+  Big Data evidence lives only in `results/bigdata/`.
 
 ## D7. Other
 
@@ -96,3 +99,75 @@ before it is quoted in the thesis. Each entry says what was done, why, and what 
 * `mypy` is not enforced; `ruff` and `pytest` are.
 * Dashboard screenshots are taken with Debian Chromium because Playwright's bundled Chromium is unavailable on
   linux-arm64 (`HFS_CHROMIUM` overrides).
+
+## D8. Big Data path (HDFS + YARN + Spark + Kafka): single-node pseudo-distributed cluster (added 2026-10-26)
+
+**What ran.** Hadoop 3.3.6 (HDFS NameNode + DataNode, YARN ResourceManager + NodeManager), Spark 3.5.9 on YARN (client
+mode), Kafka 3.9.2 in KRaft mode (one broker/controller), OpenJDK 17, Python 3.12 — all daemons on **one 2-vCPU /
+7.7 GB aarch64 sandbox** (replication 1, one NodeManager with 4 GB / 4 vcores advertised). It is a *pseudo-distributed*
+cluster: every service and protocol is the real one (HDFS block storage, YARN containers, Kafka log, Spark
+shuffle/state store/checkpoints), but there is no multi-node parallelism, no fault tolerance across machines and no
+network cost. Throughput/latency numbers therefore show that the pipeline works end-to-end on real infrastructure,
+not how it scales. Job evidence (YARN application IDs, wall times, HDFS paths): `results/bigdata/RUN_LOG.md`.
+Code: `src/hfs/bigdata/`, `scripts/bigdata/`, `make bigdata-*`. The local fallback (`make features`, `make stream`,
+`hfs.streaming.local_stream`) is unchanged and still produces every v0.1.0 number.
+
+* **HDFS:** bronze ERA5 city partitions (`city=*/year=*/part-0.parquet`) are uploaded incrementally to
+  `hdfs:///heatflood/bronze/era5_hourly`. At the time of the run the local download was **partial**: 1990–1999 and
+  2015–2022 (355 partitions, 3.11 M hourly rows). The code takes whatever complete partitions exist (`make
+  bigdata-hdfs-load` again after more years arrive).
+* **Spark ETL parity (2015–2022):** `spark_etl.py --years 2015-2022` on YARN reproduces the pandas silver/gold
+  **exactly in structure and within float tolerance in value**: all 8 tables (silver hourly/daily, 3 climatologies,
+  flash-flood 6 h labels, daily and hourly features — 1.40 M x 138 hourly columns) have identical row keys, identical
+  label/integer/string columns (heatwave 1405 / absolute 6086 positive days; flash-flood labels identical) and
+  max |diff| 1.7e-4 (heat index, float32 rounding) — `results/bigdata/parity_2015_2022.json`. The one systematic
+  difference is the provenance column `feature_spec_hash`: the pandas gold (built 2026-10-23) stores `65fdaa8aab36b629`,
+  today's configs hash to `836de2011c195237` (`configs/app.yaml` was edited 2026-10-24); it is metadata, excluded from
+  the verdict and reported separately.
+* **Spark ETL on all available years** (`--years all`, tag `lake`): same code; note that the existing rule "climatology
+  = every row with time <= train_end" then pools **1990–1999 + 2015–2020** (the pandas pipeline would do the same if
+  given these years). Lags/rolling windows are row-based (as in pandas), so the first rows of 2015 see 1999 rows as their
+  predecessors across the 2000–2014 download gap; split labels mark 1990–1999 as `gap`. Use the 2015–2022 parity run for
+  anything compared with the thesis results until the full 1990–2026 series is downloaded. Effect seen in the lake run
+  (`application_1792965347508_0009`, 3.11 M hourly / 129,614 daily rows, 456 s on YARN): the pooled 1990s+2015–2020
+  climatology lowers the p95 thresholds, so heatwave label days rise to 1068 / 329 / 686 (train / val / test) versus
+  593 / 261 / 551 in the 2015–2022 run; the absolute-40 °C label is unchanged (4596 / 620 / 870).
+* **Recursive API filter** (`API_t = k*API_{t-1} + P_t`) is sequential, so it runs as a grouped-map pandas UDF
+  (`groupBy(city).applyInPandas`) on the executors; everything else is native Spark SQL/window functions.
+* **Memory compromises:** `/tmp` (YARN local dirs: shuffle, spills) is RAM-backed. The first YARN attempts of the parity
+  job failed — `application_1792965347508_0001` (executors could not import numpy: user site-packages not visible in
+  containers; fixed with `PYTHONUSERBASE`) and `application_1792965347508_0002` (executors SIGKILLed, exit 137, by the
+  OS when the 140-column hourly window stage ran next to all daemons). The successful configuration uses 1 executor x
+  2 cores (1.5 GB heap + 640 MB overhead), builds the hourly features in chunks of 3–4 cities, avoids caching, and the
+  700 MB pip download cache in the RAM-backed home directory was purged before the runs.
+* **Compatibility patches (environment, not project code):** Python 3.12 has no `distutils`; a 40-line `LooseVersion`
+  shim is shipped (`$BIGDATA_HOME/pylib/distutils`, also zipped with the job). PySpark 3.5.9's
+  `applyInPandasWithState` breaks with pandas 3.x (`RecordBatch.slice` receives floats); `scripts/bigdata/
+  patch_pyspark_pandas3.py` casts the two offsets to `int` in `SPARK_HOME/python` and `pyspark.zip` (originals kept as
+  `*.orig`). WebHDFS uploads bypass the sandbox HTTP proxy for 127.0.0.1.
+* **MLlib baselines** (`results/bigdata/mllib_baseline.json`, train 2015–2020 / val 2021 / test 2022, same target
+  rows as the thesis models): GBTRegressor Tmax +1 d test RMSE **1.926 °C** vs persistence 1.902 and the existing
+  XGBoost 1.835 on the same 7,280 rows — i.e. the MLlib GBT (100 trees, step 0.1, no missing-value support, 280
+  warm-up rows dropped from train) does **not** beat persistence. GBTClassifier heatwave +1 d: ROC-AUC 0.947, PR-AUC
+  0.618, CSI 0.367 at the validation-tuned threshold (XGBoost reference 0.943 / 0.589 / 0.356; persistence rule CSI
+  0.717). No isotonic calibration; one seed.
+* **Streaming** (`results/bigdata/streaming_kafka_spark.json`): Kafka `hf-obs` (4 partitions) -> Structured Streaming on
+  YARN with `applyInPandasWithState` (per-city state in the HDFS-backed state store) -> Kafka `hf-alerts` + Parquet in
+  HDFS, checkpoint `hdfs:///heatflood/stream/<run>/_checkpoint`.
+  * The streaming job evaluates the **degraded rule chain** of `StreamProcessor` (climatology rule for heatwave,
+    6-h/24-h rain thresholds for flash flood) with an exact port of `AlertEngine` severity/hysteresis/cooldown
+    (deterministic alert ids). The XGBoost detectors/forecasters are **not** run inside Spark, so these alerts and
+    latencies are not comparable 1:1 with `results/streaming_local.json` (which includes XGBoost inference and full
+    feature recomputation).
+  * Throughput: 58,560 backlog events drained at **2,739 events/s** (sum of Spark trigger times; 1,344 events/s
+    including YARN start-up). Latency at 100 events/s with a 1 s trigger: event -> Parquet sink p50 **2.8 s**, p95
+    **5.5 s**; event -> `hf-alerts` p50 2.3 s, p95 3.2 s (54 alerts). Same host, same clock.
+  * Kill-and-restart: driver SIGKILLed after 45 s while the producer was writing (250 events/s), YARN app killed,
+    job restarted from the checkpoint: 21,600 Kafka events -> 21,600 sink rows, 21,600 distinct (partition, offset),
+    0 missing, 0 duplicates (**exactly-once into the Parquet sink**, made idempotent by overwriting
+    `scored/batch_id=<n>` per batch). Every streamed feature and all 212 alerts are identical to an offline
+    single-pass reference, and the streamed 24 h rolling features equal the batch gold exactly (21,120 rows).
+    The Kafka alert sink is **at-least-once**: `hf-alerts` holds 254 messages for 212 distinct alerts (42 re-published
+    by the batch replayed after the crash) — consumers must dedupe on `alert_id|alert_action|alert_issue_time`.
+  * Replay events are deterministic ERA5 rows; event-time dedup is done in state (events older than the last applied
+    one are dropped as `dup`) instead of the 2 h watermark + `dropDuplicates` of `hfs.streaming.spark_stream`.
