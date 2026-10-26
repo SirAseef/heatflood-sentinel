@@ -1,6 +1,6 @@
 # HeatFlood Sentinel — Demonstration Video
 
-<p align="center"><a href="https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/HeatFlood_Sentinel_Demo_1080p.mp4"><img src="thumb_1.png" alt="HeatFlood Sentinel demo video (4:59)" width="720"/></a></p>
+<p align="center"><a href="HeatFlood_Sentinel_Demo_1080p.mp4"><img src="thumb_1.png" alt="HeatFlood Sentinel demo video (4:59)" width="720"/></a></p>
 
 A 4 min 59 s narrated walkthrough of the HeatFlood Sentinel dashboard and thesis results
 (MS Data Science, NED University of Engineering and Technology — Aseef Ahmed; supervisor Dr. Maria Andaleeb Siddiqui).
@@ -9,11 +9,11 @@ A 4 min 59 s narrated walkthrough of the HeatFlood Sentinel dashboard and thesis
 
 | File | Resolution | Size |
 |---|---|---|
-| [HeatFlood_Sentinel_Demo_4K.mp4](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/HeatFlood_Sentinel_Demo_4K.mp4) | 3840 × 2160, 30 fps | 176.5 MiB |
-| [HeatFlood_Sentinel_Demo_1080p.mp4](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/HeatFlood_Sentinel_Demo_1080p.mp4) | 1920 × 1080, 30 fps | 73.3 MiB |
-| [HeatFlood_Sentinel_Demo_720p.mp4](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/HeatFlood_Sentinel_Demo_720p.mp4) | 1280 × 720, 30 fps (small, for sharing) | 23.4 MiB |
-| [HeatFlood_Sentinel_Demo.srt](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/HeatFlood_Sentinel_Demo.srt) | English subtitles | |
-| [thumb_1.png](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/thumb_1.png) · [thumb_2.png](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/thumb_2.png) · [thumb_3.png](https://github.com/SirAseef/heatflood-sentinel/releases/download/demo-video-2026-10/thumb_3.png) | 1280 × 720 thumbnails | |
+| [HeatFlood_Sentinel_Demo_4K.mp4](https://drive.google.com/file/d/1xyJU2_eycr0uaFPmzhPnOhxRq75VEuSG/view?usp=drivesdk) | 3840 × 2160, 30 fps | 178.7 MiB (Google Drive; exceeds GitHub 100 MB file limit) |
+| [HeatFlood_Sentinel_Demo_1080p.mp4](HeatFlood_Sentinel_Demo_1080p.mp4) | 1920 × 1080, 30 fps | 74.3 MiB |
+| [HeatFlood_Sentinel_Demo_720p.mp4](HeatFlood_Sentinel_Demo_720p.mp4) | 1280 × 720, 30 fps (small, for sharing) | 23.7 MiB |
+| [HeatFlood_Sentinel_Demo.srt](HeatFlood_Sentinel_Demo.srt) | English subtitles | |
+| [thumb_1.png](thumb_1.png) · [thumb_2.png](thumb_2.png) · [thumb_3.png](thumb_3.png) | 1280 × 720 thumbnails | |
 
 ## What the video shows
 Title card → Overview → Live Alerts → City pages (Karachi, Jacobabad) → Forecasting → Heatwave & flash-flood detection →

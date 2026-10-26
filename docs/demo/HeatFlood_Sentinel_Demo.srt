@@ -1,0 +1,347 @@
+1
+00:00:00,330 --> 00:00:01,621
+HeatFlood Sentinel.
+
+2
+00:00:01,671 --> 00:00:05,918
+A scalable big data and deep learning
+framework for heatwave and flash flood
+
+3
+00:00:05,968 --> 00:00:08,809
+forecasting and detection in Pakistan.
+
+4
+00:00:08,859 --> 00:00:13,770
+An M.S. Data Science thesis at NED
+University of Engineering and Technology,
+
+5
+00:00:13,820 --> 00:00:18,230
+by Aseef Ahmed, supervised by Doctor Maria
+Andaleeb Siddiqui.
+
+6
+00:00:18,851 --> 00:00:24,113
+Pakistan faces two linked climate hazards:
+extreme heat before the monsoon,
+
+7
+00:00:24,163 --> 00:00:25,917
+and sudden flooding during it.
+
+8
+00:00:25,986 --> 00:00:31,678
+HeatFlood Sentinel ingests eight years of
+ERA5 reanalysis for twenty Pakistani
+
+9
+00:00:31,728 --> 00:00:36,834
+cities, one point four million hourly
+rows, and benchmarks statistical,
+
+10
+00:00:36,884 --> 00:00:41,926
+machine learning and deep learning models
+on a fully held-out 2022 test year.
+
+11
+00:00:41,976 --> 00:00:45,728
+The home page shows headline accuracy, the
+hazard map,
+
+12
+00:00:45,778 --> 00:00:49,329
+and an alert replay from the streamed 2022
+season.
+
+13
+00:00:49,951 --> 00:00:54,614
+The Live Alerts page runs the same models
+on real-time Open-Meteo data.
+
+14
+00:00:54,664 --> 00:01:00,174
+Every six hours, a GitHub Actions workflow
+pulls fresh observations and forecasts,
+
+15
+00:01:00,224 --> 00:01:03,937
+streams them through the alert engine, and
+republishes the map,
+
+16
+00:01:03,987 --> 00:01:06,926
+the open alerts, and this all-cities
+table.
+
+17
+00:01:07,537 --> 00:01:10,086
+Each of the twenty cities has its own
+page.
+
+18
+00:01:10,155 --> 00:01:14,766
+Here is Karachi, then Jacobabad: a
+seventy-two hour outlook,
+
+19
+00:01:14,816 --> 00:01:20,665
+live hazard checks, daily forecasts
+against ERA5 for the 2022 test year,
+
+20
+00:01:20,715 --> 00:01:24,682
+and the model's heatwave and flash flood
+probabilities through the season.
+
+21
+00:01:25,310 --> 00:01:30,312
+For forecasting, the hourly LSTM predicts
+temperature one hour ahead with an error
+
+22
+00:01:30,362 --> 00:01:35,026
+of just zero point six three four degrees,
+against one point five six for
+
+23
+00:01:35,076 --> 00:01:36,145
+persistence.
+
+24
+00:01:36,195 --> 00:01:39,994
+At six hours it still holds one point
+three seven degrees.
+
+25
+00:01:40,604 --> 00:01:42,853
+Detection is reported honestly.
+
+26
+00:01:42,987 --> 00:01:48,562
+For flash floods six hours ahead, XGBoost
+reaches a critical success index of zero
+
+27
+00:01:48,612 --> 00:01:52,124
+point six zero nine, ahead of the
+persistence rule.
+
+28
+00:01:52,232 --> 00:01:57,052
+For heatwaves one day ahead, however,
+simple persistence still wins,
+
+29
+00:01:57,102 --> 00:02:02,468
+with a CSI of zero point seven one seven
+against zero point three five six for
+
+30
+00:02:02,518 --> 00:02:03,673
+XGBoost.
+
+31
+00:02:03,729 --> 00:02:07,976
+Heat events last for days, so yesterday is
+a strong predictor,
+
+32
+00:02:08,026 --> 00:02:10,262
+and the thesis says so plainly.
+
+33
+00:02:10,884 --> 00:02:16,003
+The benchmark page compares LSTM,
+ConvLSTM, XGBoost,
+
+34
+00:02:16,053 --> 00:02:21,850
+SARIMA, persistence and climatology, with
+Diebold-Mariano significance tests.
+
+35
+00:02:21,900 --> 00:02:27,826
+On the gridded two-degree ERA5 lattice,
+the ConvLSTM beats persistence at every
+
+36
+00:02:27,876 --> 00:02:32,221
+lead from one to six hours, for both
+temperature and rainfall.
+
+37
+00:02:32,804 --> 00:02:36,629
+This thesis figure shows that gap widening
+with lead time:
+
+38
+00:02:36,684 --> 00:02:41,634
+at six hours the ConvLSTM's temperature
+error is two point two nine degrees,
+
+39
+00:02:41,684 --> 00:02:44,545
+against six point one seven for
+persistence.
+
+40
+00:02:45,137 --> 00:02:48,389
+Explainability shows why a model raised an
+alert.
+
+41
+00:02:48,445 --> 00:02:52,835
+For the heatwave detector, the strongest
+driver is the daily maximum temperature
+
+42
+00:02:52,885 --> 00:02:57,275
+anomaly, followed by exceedance of the
+ninetieth and ninety-fifth percentile
+
+43
+00:02:57,325 --> 00:02:58,473
+thresholds.
+
+44
+00:02:58,523 --> 00:03:02,334
+Saliency maps do the same for the
+ConvLSTM.
+
+45
+00:03:02,951 --> 00:03:07,114
+The streaming pipeline replayed the full
+2022 season:
+
+46
+00:03:07,182 --> 00:03:11,182
+eighty-seven thousand eight hundred and
+forty events at two hundred and ten point
+
+47
+00:03:11,232 --> 00:03:12,731
+five events per second.
+
+48
+00:03:12,781 --> 00:03:18,434
+Under chaos tests, duplicates, corrupt
+records, late data and outages never
+
+49
+00:03:18,484 --> 00:03:23,239
+crashed it, and on a kill and restart it
+lost zero alerts and produced zero
+
+50
+00:03:23,289 --> 00:03:24,398
+duplicates.
+
+51
+00:03:24,448 --> 00:03:28,031
+The same pipeline now also runs on a
+single-node Hadoop,
+
+52
+00:03:28,081 --> 00:03:33,421
+YARN, Spark and Kafka cluster: about two
+thousand seven hundred events per second
+
+53
+00:03:33,471 --> 00:03:39,033
+on a backlog, and a kill and restart test
+with zero lost and zero duplicate events
+
+54
+00:03:39,083 --> 00:03:40,179
+in the output.
+
+55
+00:03:40,229 --> 00:03:43,116
+The numbers on this page come from the
+local runtime.
+
+56
+00:03:43,751 --> 00:03:47,542
+Batch processing scales almost linearly
+with data volume,
+
+57
+00:03:47,592 --> 00:03:51,070
+and two workers gave a one point eight
+eight times speed-up,
+
+58
+00:03:51,120 --> 00:03:53,187
+at ninety-four percent efficiency.
+
+59
+00:03:53,784 --> 00:03:58,460
+The architecture follows a medallion data
+lake, from bronze raw data to silver
+
+60
+00:03:58,510 --> 00:04:03,382
+cleaned data to gold features, feeding the
+models, the stream processor,
+
+61
+00:04:03,432 --> 00:04:07,374
+and a FastAPI service that is exported to
+this static site.
+
+62
+00:04:08,030 --> 00:04:13,657
+The case study replays Jacobabad in 2022,
+one of the hottest cities on Earth,
+
+63
+00:04:13,707 --> 00:04:17,967
+through its pre-monsoon heatwave and the
+monsoon floods that followed,
+
+64
+00:04:18,017 --> 00:04:21,737
+showing exactly when the system would have
+raised each alert.
+
+65
+00:04:22,364 --> 00:04:25,550
+Here is the same replay as it appears in
+the thesis.
+
+66
+00:04:26,249 --> 00:04:30,939
+Finally, the research page lists the
+thesis and two review manuscripts in
+
+67
+00:04:30,989 --> 00:04:35,873
+preparation, the API docs describe every
+endpoint behind the dashboard,
+
+68
+00:04:35,923 --> 00:04:39,579
+and the about page explains how the
+project is kept up to date.
+
+69
+00:04:40,171 --> 00:04:45,433
+All of the code is open source on GitHub,
+released as version zero point one point
+
+70
+00:04:45,483 --> 00:04:50,454
+zero, with fifty-eight automated tests
+passing in continuous integration.
+
+71
+00:04:51,130 --> 00:04:52,291
+Thank you for watching.
+
+72
+00:04:52,341 --> 00:04:56,244
+Explore the live dashboard and the code at
+the links on screen.
+
