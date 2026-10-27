@@ -1,11 +1,22 @@
 <!doctype html>
-<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Data & Methodology · HeatFlood Sentinel</title><meta name="description" content="ERA5 data catalogue, QC, hazard definitions, limitations and thesis alignment.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/data.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/data.html">
 <meta property="og:title" content="Data & Methodology · HeatFlood Sentinel"><meta property="og:description" content="ERA5 data catalogue, QC, hazard definitions, limitations and thesis alignment.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Data & Methodology · HeatFlood Sentinel"><meta name="twitter:description" content="ERA5 data catalogue, QC, hazard definitions, limitations and thesis alignment."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Data & Methodology \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/data.html", "description": "ERA5 data catalogue, QC, hazard definitions, limitations and thesis alignment.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
 <script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
 <section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-12"><div class="eyebrow">Extended archive · 2026-10</div><h2>ERA5 hourly city archive: 1990–2026</h2><p class="sub">The KPIs and tables below describe the feature store behind the published v0.1.0 models (2015–2022). The raw city archive has since been extended:</p>
+<ul class="factstrip" style="margin-top:6px"><li><b>1990-01-01</b>archive start</li><li><b>2026-10-19</b>archive end</li><li><b>20</b>cities</li><li><b>6,451,680</b>hourly city rows</li><li><b>Partial</b>0.25° grid extension</li></ul>
+<p class="muted small" style="margin-top:10px">20 cities × 13,441 days × 24 h = 6,451,680 rows. Retraining on 1990–2026 is in progress; the model pages will be updated with its metrics.</p></div></section>
 <section class="grid"><div class="card glass span-7"><h2>Dataset catalogue (medallion zones)</h2><p class="sub">Bronze = raw ERA5 point/grid files; Silver = cleaned + QC; Gold = features, labels, predictions. sha256 over the first 2 MB.</p><div id="cat"></div></div>
 <div class="card glass span-5"><h2>Quality control</h2><p class="sub">QC bitmask counts on the hourly rows (range, spike, stuck, duplicate, gap, missing).</p><div id="qc"></div><h2 style="margin-top:14px">Label prevalence</h2><div id="prev"></div></div></section>
 <section class="grid"><div class="card glass span-8"><h2>Monthly climate signal <select id="mcity" style="float:right"></select></h2><p class="sub">Mean daily Tmax (line) and monthly precipitation total (bars, scaled), 2015–2022 ERA5.</p><div id="monthly" class="chart"></div></div>
@@ -15,12 +26,12 @@
 <p><b>Heatwave</b>: daily Tmax &gt; local calendar-day 95th percentile (±7-day window, fitted on the training years) for ≥ 3 consecutive days. Alternative: Tmax ≥ 40 °C for ≥ 3 days.</p>
 <p><b>Flash-flood risk (PROXY)</b>: default 6-h total ≥ max(50 mm, local p99) and antecedent precipitation index &gt; local p75; alternative 24-h total ≥ local p99.5. ERA5 does not observe floods — these are reanalysis proxies.</p>
 <p><b>Alert levels</b>: Normal &lt; 0.30 ≤ Advisory &lt; 0.55 ≤ Watch &lt; 0.75 ≤ Warning &lt; 0.90 ≤ Emergency, with persistence/rain conditions, 2-step hysteresis and 3-h cooldown.</p>
-<p><b>Splits</b>: time-only — train 2015–2020, validation 2021, test 2022. Climatologies and thresholds use training years only.</p></div></div>
+<p><b>Splits (release v0.1.0 results)</b>: time-only — train 2015–2020, validation 2021, test 2022. Climatologies and thresholds use training years only. Retraining on the extended 1990–2026 archive is in progress; its splits and metrics will be published with that run.</p></div></div>
 <div class="card glass span-6"><h2>Limitations</h2><ul class="prose">
 <li>Reanalysis is not observation; ERA5 (~25 km) cannot resolve convective cells or urban drainage.</li>
 <li>Flood labels are proxies without hydrological routing; validate against NDMA/PDMA event records.</li>
-<li>dev-lite results (8 years, 20 cities, 2° grid) are indicative; the full profile (1991–2025, 0.25° grid) needs a workstation or cluster.</li>
-<li>Streaming latencies were measured with the local streaming fallback on a 2-vCPU sandbox, not on a Kafka/Spark cluster.</li>
+<li>Published model results (release v0.1.0) use 8 years (2015–2022). The city archive now spans 1990-01-01 → 2026-10-19 (6,451,680 hourly rows) and retraining on it is in progress; the gridded (0.25°) extension is still partial.</li>
+<li>Most streaming latencies on this site were measured with the local runtime on a 2-vCPU sandbox. Kafka (KRaft) and Spark Structured Streaming were executed on a single-node pseudo-distributed Hadoop/YARN cluster (<a href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/bigdata.md">docs/bigdata.md</a>); there are no multi-node cluster numbers.</li>
 <li>PMD station data not yet available (agreement pending) — adapter implemented and tested on synthetic PMD-like files only.</li>
 <li>The Live page uses Open-Meteo's forecast model (bias-corrected toward ERA5), not ERA5, for the most recent ~5 days and the 72-h outlook.</li></ul></div></section>
 <section class="grid"><div class="card glass span-12"><h2>Thesis alignment — objectives and research questions → implementation</h2><div id="align"></div></div></section>
@@ -29,7 +40,7 @@
 <li>Open-Meteo forecast/current API — CC BY 4.0, free for non-commercial use.</li><li>Country boundary — Natural Earth (public domain) via world.geo.json.</li>
 <li>Software: PyTorch, XGBoost, statsmodels, scikit-learn, pandas, xarray, FastAPI.</li></ul></div></section>
 <script>
-shell('data', 'Data & Methodology', 'ERA5 2015–2022 for 20 cities + a 2° grid: catalogue, QC, coverage, labels, definitions and limitations.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
+shell('data', 'Data & Methodology', 'ERA5 hourly 1990–2026 for 20 cities (models v0.1.0 trained on 2015–2022) + a partial grid: catalogue, QC, coverage, labels, definitions and limitations.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
 (async () => {
   const [cat, q, s, f] = await Promise.all([api('/data/catalog'), api('/data/quality'), api('/data/sample?n=15'), api('/pipeline/status')]);
   const fs = f.features;

@@ -1,11 +1,20 @@
 <!doctype html>
-<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Architecture · HeatFlood Sentinel</title><meta name="description" content="HeatFlood Sentinel architecture, data flow, stream contract and deployment.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/architecture.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/architecture.html">
 <meta property="og:title" content="Architecture · HeatFlood Sentinel"><meta property="og:description" content="HeatFlood Sentinel architecture, data flow, stream contract and deployment.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Architecture · HeatFlood Sentinel"><meta name="twitter:description" content="HeatFlood Sentinel architecture, data flow, stream contract and deployment."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Architecture \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/architecture.html", "description": "HeatFlood Sentinel architecture, data flow, stream contract and deployment.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
 <script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
-<section class="grid"><div class="card glass span-12"><h2>Five-layer architecture</h2><p class="sub">Ingestion → storage/processing → models → streaming inference & alerting → serving. Every runtime calls the same <code>StreamProcessor</code> and feature library used for training (train–serve parity). Dashed = provided but not executed in v0.1.0.</p>
+<section class="grid"><div class="card glass span-12"><div class="note info"><b>Execution status.</b> The Big Data path was <b>executed</b> on a single-node pseudo-distributed cluster: Hadoop 3.3.6 (HDFS + YARN), Spark 3.5.9 (batch ETL, MLlib baseline, Structured Streaming on YARN) and Kafka 3.9.2 (KRaft) — 2,739 events/s on a 58,560-event backlog, p50/p95 latency to HDFS 2.8/5.5 s, kill-and-restart 21,600/21,600 rows with 0 lost and 0 duplicates (<a href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/bigdata.md">docs/bigdata.md</a>). The <code>docker compose</code> stack was not used for that run, and no multi-node cluster was run. The dashboard's live job (GitHub Actions) uses the local runtime with the same <code>StreamProcessor</code>.</div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Five-layer architecture</h2><p class="sub">Ingestion → storage/processing → models → streaming inference & alerting → serving. Every runtime calls the same <code>StreamProcessor</code> and feature library used for training (train–serve parity). Dashed = provided but not executed (PMD station adapter, Copernicus CDS download). Kafka and Spark were executed on a single node.</p>
 <div class="mermaid"><a href="figures/arch_1.svg"><img src="figures/arch_1.svg" alt="Architecture diagram 1" style="width:100%;height:auto;display:block"></a></div><details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">Diagram source (Mermaid)</summary><pre class="code">flowchart LR
   subgraph L1[1 · Ingestion]
     A1[ERA5 via Open-Meteo archive<br/>20 cities hourly + 2° grid] --> B
@@ -24,10 +33,10 @@
     G --> M4[XGBoost detectors<br/>isotonic + CSI threshold]
   end
   subgraph L4[4 · Streaming inference & alerting]
-    P[Producer<br/>replay / live] --> K{{Local fallback queue<br/>executed}}
-    P -.-> KF{{Kafka KRaft<br/>not executed}}
+    P[Producer<br/>replay / live] --> K{{Local queue<br/>executed · results + live job}}
+    P --> KF{{Kafka KRaft + Spark Structured Streaming on YARN<br/>executed · single-node pseudo-distributed}}
     K --> SP[StreamProcessor<br/>validate · dedup · watermark · features · inference]
-    KF -.-> SP
+    KF --> SP
     SP -->|DLQ| D[(dead-letter)]
     SP --> AE[Alert engine<br/>levels 0–4, hysteresis, cooldown]
   end
@@ -268,5 +277,5 @@ compose) is the SRS full configuration. It is scripted but was not
 executed for v0.1.0 (DEVIATIONS.md D5, D6).</p>
 </div></div></section>
 <script>
-shell('architecture', 'Architecture', 'System design, data flow, streaming contract and how this site is deployed.', '<span class="chip">v0.1.0</span><span class="chip">LOCAL STREAMING FALLBACK</span>');
+shell('architecture', 'Architecture', 'System design, data flow, streaming contract and how this site is deployed.', '<span class="chip">v0.1.0</span><span class="chip real">HADOOP · SPARK · KAFKA EXECUTED (SINGLE NODE)</span>');
 </script></body></html>

@@ -235,7 +235,7 @@ PIPE_BODY = """
 <div class="card glass span-6"><h2>Execution status of runtimes</h2><div id="rt" class="prose"></div></div></section>
 """
 PIPE_JS = """
-shell('pipeline', 'Streaming & Scalability', 'Streaming latency, throughput, fault tolerance and scaling evidence (RQ3, RQ4).', '<span class="chip">LOCAL STREAMING FALLBACK</span><span class="chip real">REAL ERA5 REPLAY</span>');
+shell('pipeline', 'Streaming & Scalability', 'Streaming latency, throughput, fault tolerance and scaling evidence (RQ3, RQ4).', '<span class="chip real">KAFKA + SPARK EXECUTED · SINGLE NODE</span><span class="chip">LOCAL RUNTIME FIGURES</span><span class="chip real">REAL ERA5 REPLAY</span>');
 (async () => {
   const [p, sc, m] = await Promise.all([api('/pipeline/status'), api('/scalability/results'), api('/pipeline/metrics?limit=1000')]);
   const st = p.streaming, b = st.baseline || {};
@@ -261,7 +261,8 @@ def arch(md, code):
     mods = md(code / "docs" / "architecture.md")
     repro = md(code / "docs" / "reproducibility.md")
     body = f"""
-<section class="grid"><div class="card glass span-12"><h2>Five-layer architecture</h2><p class="sub">Ingestion → storage/processing → models → streaming inference & alerting → serving. Every runtime calls the same <code>StreamProcessor</code> and feature library used for training (train–serve parity). Dashed = provided but not executed in v0.1.0.</p>
+<section class="grid"><div class="card glass span-12"><div class="note info"><b>Execution status.</b> The Big Data path was <b>executed</b> on a single-node pseudo-distributed cluster: Hadoop 3.3.6 (HDFS + YARN), Spark 3.5.9 (batch ETL, MLlib baseline, Structured Streaming on YARN) and Kafka 3.9.2 (KRaft) — 2,739 events/s on a 58,560-event backlog, p50/p95 latency to HDFS 2.8/5.5 s, kill-and-restart 21,600/21,600 rows with 0 lost and 0 duplicates (<a href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/bigdata.md">docs/bigdata.md</a>). The <code>docker compose</code> stack was not used for that run, and no multi-node cluster was run. The dashboard's live job (GitHub Actions) uses the local runtime with the same <code>StreamProcessor</code>.</div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Five-layer architecture</h2><p class="sub">Ingestion → storage/processing → models → streaming inference & alerting → serving. Every runtime calls the same <code>StreamProcessor</code> and feature library used for training (train–serve parity). Dashed = provided but not executed (PMD station adapter, Copernicus CDS download). Kafka and Spark were executed on a single node.</p>
 <pre class="mermaid">
 flowchart LR
   subgraph L1[1 · Ingestion]
@@ -281,10 +282,10 @@ flowchart LR
     G --> M4[XGBoost detectors<br/>isotonic + CSI threshold]
   end
   subgraph L4[4 · Streaming inference & alerting]
-    P[Producer<br/>replay / live] --> K{{{{Local fallback queue<br/>executed}}}}
-    P -.-> KF{{{{Kafka KRaft<br/>not executed}}}}
+    P[Producer<br/>replay / live] --> K{{{{Local queue<br/>executed · results + live job}}}}
+    P --> KF{{{{Kafka KRaft + Spark Structured Streaming on YARN<br/>executed · single-node pseudo-distributed}}}}
     K --> SP[StreamProcessor<br/>validate · dedup · watermark · features · inference]
-    KF -.-> SP
+    KF --> SP
     SP -->|DLQ| D[(dead-letter)]
     SP --> AE[Alert engine<br/>levels 0–4, hysteresis, cooldown]
   end
@@ -327,7 +328,7 @@ sequenceDiagram
 <section class="grid"><div class="card glass span-12"><h2>Reproducibility</h2><div class="prose">{repro}</div></div></section>
 """
     js = """
-shell('architecture', 'Architecture', 'System design, data flow, streaming contract and how this site is deployed.', '<span class="chip">v0.1.0</span><span class="chip">LOCAL STREAMING FALLBACK</span>');
+shell('architecture', 'Architecture', 'System design, data flow, streaming contract and how this site is deployed.', '<span class="chip">v0.1.0</span><span class="chip real">HADOOP · SPARK · KAFKA EXECUTED (SINGLE NODE)</span>');
 (async () => { const dark = document.documentElement.dataset.theme === 'dark';
   try { const m = await import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs'); m.default.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'strict', flowchart: { htmlLabels: true } }); await m.default.run({ querySelector: '.mermaid' }); }
   catch (e) { document.querySelectorAll('.mermaid').forEach(x => x.insertAdjacentHTML('beforebegin', '<p class="muted">Diagram renderer (mermaid CDN) unavailable — showing source.</p>')); } void dark; })();
@@ -337,6 +338,9 @@ shell('architecture', 'Architecture', 'System design, data flow, streaming contr
 
 DATA_BODY = """
 <section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-12"><div class="eyebrow">Extended archive · 2026-10</div><h2>ERA5 hourly city archive: 1990–2026</h2><p class="sub">The KPIs and tables below describe the feature store behind the published v0.1.0 models (2015–2022). The raw city archive has since been extended:</p>
+<ul class="factstrip" style="margin-top:6px"><li><b>1990-01-01</b>archive start</li><li><b>2026-10-19</b>archive end</li><li><b>20</b>cities</li><li><b>6,451,680</b>hourly city rows</li><li><b>Partial</b>0.25° grid extension</li></ul>
+<p class="muted small" style="margin-top:10px">20 cities × 13,441 days × 24 h = 6,451,680 rows. Retraining on 1990–2026 is in progress; the model pages will be updated with its metrics.</p></div></section>
 <section class="grid"><div class="card glass span-7"><h2>Dataset catalogue (medallion zones)</h2><p class="sub">Bronze = raw ERA5 point/grid files; Silver = cleaned + QC; Gold = features, labels, predictions. sha256 over the first 2 MB.</p><div id="cat"></div></div>
 <div class="card glass span-5"><h2>Quality control</h2><p class="sub">QC bitmask counts on the hourly rows (range, spike, stuck, duplicate, gap, missing).</p><div id="qc"></div><h2 style="margin-top:14px">Label prevalence</h2><div id="prev"></div></div></section>
 <section class="grid"><div class="card glass span-8"><h2>Monthly climate signal <select id="mcity" style="float:right"></select></h2><p class="sub">Mean daily Tmax (line) and monthly precipitation total (bars, scaled), 2015–2022 ERA5.</p><div id="monthly" class="chart"></div></div>
@@ -346,12 +350,12 @@ DATA_BODY = """
 <p><b>Heatwave</b>: daily Tmax &gt; local calendar-day 95th percentile (±7-day window, fitted on the training years) for ≥ 3 consecutive days. Alternative: Tmax ≥ 40 °C for ≥ 3 days.</p>
 <p><b>Flash-flood risk (PROXY)</b>: default 6-h total ≥ max(50 mm, local p99) and antecedent precipitation index &gt; local p75; alternative 24-h total ≥ local p99.5. ERA5 does not observe floods — these are reanalysis proxies.</p>
 <p><b>Alert levels</b>: Normal &lt; 0.30 ≤ Advisory &lt; 0.55 ≤ Watch &lt; 0.75 ≤ Warning &lt; 0.90 ≤ Emergency, with persistence/rain conditions, 2-step hysteresis and 3-h cooldown.</p>
-<p><b>Splits</b>: time-only — train 2015–2020, validation 2021, test 2022. Climatologies and thresholds use training years only.</p></div></div>
+<p><b>Splits (release v0.1.0 results)</b>: time-only — train 2015–2020, validation 2021, test 2022. Climatologies and thresholds use training years only. Retraining on the extended 1990–2026 archive is in progress; its splits and metrics will be published with that run.</p></div></div>
 <div class="card glass span-6"><h2>Limitations</h2><ul class="prose">
 <li>Reanalysis is not observation; ERA5 (~25 km) cannot resolve convective cells or urban drainage.</li>
 <li>Flood labels are proxies without hydrological routing; validate against NDMA/PDMA event records.</li>
-<li>dev-lite results (8 years, 20 cities, 2° grid) are indicative; the full profile (1991–2025, 0.25° grid) needs a workstation or cluster.</li>
-<li>Streaming latencies were measured with the local streaming fallback on a 2-vCPU sandbox, not on a Kafka/Spark cluster.</li>
+<li>Published model results (release v0.1.0) use 8 years (2015–2022). The city archive now spans 1990-01-01 → 2026-10-19 (6,451,680 hourly rows) and retraining on it is in progress; the gridded (0.25°) extension is still partial.</li>
+<li>Most streaming latencies on this site were measured with the local runtime on a 2-vCPU sandbox. Kafka (KRaft) and Spark Structured Streaming were executed on a single-node pseudo-distributed Hadoop/YARN cluster (<a href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/bigdata.md">docs/bigdata.md</a>); there are no multi-node cluster numbers.</li>
 <li>PMD station data not yet available (agreement pending) — adapter implemented and tested on synthetic PMD-like files only.</li>
 <li>The Live page uses Open-Meteo's forecast model (bias-corrected toward ERA5), not ERA5, for the most recent ~5 days and the 72-h outlook.</li></ul></div></section>
 <section class="grid"><div class="card glass span-12"><h2>Thesis alignment — objectives and research questions → implementation</h2><div id="align"></div></div></section>
@@ -361,7 +365,7 @@ DATA_BODY = """
 <li>Software: PyTorch, XGBoost, statsmodels, scikit-learn, pandas, xarray, FastAPI.</li></ul></div></section>
 """
 DATA_JS = """
-shell('data', 'Data & Methodology', 'ERA5 2015–2022 for 20 cities + a 2° grid: catalogue, QC, coverage, labels, definitions and limitations.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
+shell('data', 'Data & Methodology', 'ERA5 hourly 1990–2026 for 20 cities (models v0.1.0 trained on 2015–2022) + a partial grid: catalogue, QC, coverage, labels, definitions and limitations.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
 (async () => {
   const [cat, q, s, f] = await Promise.all([api('/data/catalog'), api('/data/quality'), api('/data/sample?n=15'), api('/pipeline/status')]);
   const fs = f.features;
@@ -400,8 +404,17 @@ RESEARCH_BODY = """
 <div class="pub"><span class="status prep">IEEE manuscript · in preparation</span><h3>Literature Review: Big Data and Deep Learning for Heatwave and Flash-Flood Forecasting and Detection in Pakistan</h3>
 <div class="meta">Aseef Ahmed · Supervisor: Dr. Maria Andaleeb Siddiqui · Department of Computer Science and Information Technology, NED UET · IEEE format · narrative review (thesis-oriented)</div></div>
 </div></section>
+<section class="grid" id="defence"><div class="card glass span-8"><div class="eyebrow">Demonstration</div><h2>Demo video (4:59)</h2>
+<div class="video"><video controls preload="none" playsinline poster="media/demo_poster.jpg" aria-label="HeatFlood Sentinel demonstration video">
+<source src="media/HeatFlood_Sentinel_Demo_720p.mp4" type="video/mp4" media="(max-width: 900px)"><source src="media/HeatFlood_Sentinel_Demo_1080p.mp4" type="video/mp4">
+<track kind="subtitles" src="media/HeatFlood_Sentinel_Demo.vtt" srclang="en" label="English"></video></div>
+<p class="muted small" style="margin-top:8px"><a href="https://drive.google.com/file/d/1xyJU2_eycr0uaFPmzhPnOhxRq75VEuSG/view?usp=drivesdk">4K master on Google Drive</a> · <a href="media/HeatFlood_Sentinel_Demo_1080p.mp4" download>download 1080p</a></p></div>
+<div class="card glass span-4"><div class="eyebrow">Thesis defence</div><h2>Slides &amp; Q&amp;A</h2><div class="doclist">
+<a class="doc" href="media/HeatFlood_Defence_AseefAhmed_v2.pdf"><span class="ico">◧</span><b>Defence deck (PDF)</b><span>41 slides · v2</span></a>
+<a class="doc" href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/defence/HeatFlood_Defence_AseefAhmed_v2.pptx"><span class="ico">▤</span><b>Defence deck (PPTX)</b><span>Source on GitHub</span></a>
+<a class="doc" href="media/Evaluator_QA_AseefAhmed.pdf"><span class="ico">?</span><b>Evaluator Q&amp;A (PDF)</b><span>Anticipated questions &amp; answers</span></a></div></div></section>
 <section class="grid"><div class="card glass span-7"><h2>Abstract (software artefact)</h2><div class="prose" id="abs"></div></div>
-<div class="card glass span-5"><h2>Cite the software</h2><p class="sub">From <code>CITATION.cff</code> in the repository.</p><pre class="code" id="cite"></pre>
+<div class="card glass span-5"><h2>Cite this work <button class="copy" data-copy="#cite">Copy BibTeX</button></h2><p class="sub">Thesis and software (from <code>CITATION.cff</code>).</p><pre class="code" id="cite"></pre>
 <h2 style="margin-top:12px">Key findings at a glance</h2><ul class="prose" id="find"></ul></div></section>
 <section class="grid"><div class="card glass span-12"><h2>Result figures</h2><p class="sub">Generated by <code>hfs.benchmark.report</code> (results/figures).</p><div class="grid">
 <div class="span-4"><img class="figure" src="figures/skill_daily_tmax.png" alt="Daily Tmax skill" loading="lazy"></div><div class="span-4"><img class="figure" src="figures/skill_hourly_t2m.png" alt="Hourly temperature skill" loading="lazy"></div>
@@ -420,15 +433,7 @@ def research_js(code):
     return """
 shell('research', 'Research & Publications', 'Thesis, manuscripts in preparation, citation and result figures.', '<span class="chip">v0.1.0</span>');
 $('#abs').innerHTML = '<p>' + """ + json.dumps(abstract) + """ + '</p>';
-$('#cite').textContent = `@software{ahmed_heatflood_sentinel_2026,
-  author  = {Ahmed, Aseef},
-  title   = {HeatFlood Sentinel: Scalable Big Data and Deep Learning Framework
-             for Heatwave and Flash-Flood Forecasting and Detection in Pakistan},
-  version = {0.1.0},
-  year    = {2026},
-  license = {MIT},
-  url     = {https://github.com/SirAseef/heatflood-sentinel}
-}`;
+$('#cite').textContent = BIBTEX;
 (async () => { const [d, h, s] = await Promise.all([api('/benchmarks?track=daily'), api('/benchmarks?track=hourly'), api('/summary')]);
   const g = (lb, v, H, m) => (lb.find(r => r.var === v && r.horizon === H && r.model === m) || {}).rmse;
   const dx = (hz, l, m) => ((d.detection_full.results || []).find(r => r.hazard === hz && r.lead === l && r.model === m) || {}).csi;
@@ -436,7 +441,8 @@ $('#cite').textContent = `@software{ahmed_heatflood_sentinel_2026,
     `Hourly T2m +1 h RMSE: LSTM ${fmt(g(h.leaderboard, 't2m', 1, 'lstm'))} °C vs XGBoost ${fmt(g(h.leaderboard, 't2m', 1, 'xgboost'))} °C vs persistence ${fmt(g(h.leaderboard, 't2m', 1, 'persistence'))} °C.`,
     `Daily Tmax d+1 RMSE: SARIMA ${fmt(g(d.leaderboard, 'tmax', 1, 'sarima'))}, LSTM ${fmt(g(d.leaderboard, 'tmax', 1, 'lstm'))}, XGBoost ${fmt(g(d.leaderboard, 'tmax', 1, 'xgboost'))}, persistence ${fmt(g(d.leaderboard, 'tmax', 1, 'persistence'))} °C.`,
     `Heatwave detection (lead 1 d) CSI: rule persistence ${fmt(dx('heatwave', '1d', 'rule_persistence'))} vs XGBoost ${fmt(dx('heatwave', '1d', 'xgboost'))} — the simple rule remains strongest.`,
-    `Local streaming fallback: ${fmt(s.stream.msgs_per_s, 0)} msgs/s, p95 batch ${fmt(s.stream.batch_ms.p95, 0)} ms, ${s.alerts_total.toLocaleString()} alert events, 0 DLQ.`].map(x => `<li>${x}</li>`).join(''); })();
+    `Kafka + Spark Structured Streaming on single-node YARN: 2,739 events/s, p50/p95 2.8/5.5 s to HDFS, 0 lost / 0 duplicates after kill-and-restart (docs/bigdata.md).`,
+    `Local runtime: ${fmt(s.stream.msgs_per_s, 0)} msgs/s, p95 batch ${fmt(s.stream.batch_ms.p95, 0)} ms, ${s.alerts_total.toLocaleString()} alert events, 0 DLQ.`].map(x => `<li>${x}</li>`).join(''); })();
 """
 
 
@@ -480,8 +486,8 @@ ABOUT_BODY = """
 <p><b>Static site on GitHub Pages</b> (the <a href="https://github.com/SirAseef/heatflood-sentinel/tree/gh-pages"><code>gh-pages</code> branch</a> of the code repository). There is no backend server.</p>
 <ul><li><b>The REST API is not hosted.</b> The FastAPI service (<code>/api/v1</code>, SSE alert stream, token-protected acknowledge / bulletin / live-refresh) runs only locally (<code>make api</code>). Its read-only responses were exported once to JSON files under <code>api/</code> with FastAPI's TestClient, and a small adapter in the page answers the dashboard's API calls from those files. See <a href="api.html">API Docs</a>.</li>
 <li><b>The live snapshot is real and scheduled.</b> A GitHub Actions workflow on the code repository's <code>main</code> branch runs every 6 hours: it checks out the code and this site, runs <code>hfs.streaming.live_feed</code> (Open-Meteo forecast/current + ERA5 archive, per-city NWP-to-ERA5 bias correction, trained detectors, alert engine) and commits <code>api/live.json</code> to <code>gh-pages</code>. If Open-Meteo is unreachable, the previous snapshot stays in place — nothing is synthesised.</li>
-<li><b>Kafka / Spark were not executed.</b> Both the published results and the live job use the <b>local streaming fallback</b> (same <code>StreamProcessor</code>).</li>
-<li>Historical pages (forecasts, detection, benchmarks, streaming) show the held-out 2022 test-year outputs of release v0.1.0 and do not change between live updates.</li></ul></div></div>
+<li><b>Kafka / Spark were executed</b> on a single-node pseudo-distributed cluster (Hadoop 3.3.6 HDFS/YARN, Spark 3.5.9, Kafka 3.9.2 KRaft): 2,739 events/s on a 58,560-event backlog, p50/p95 latency to HDFS 2.8/5.5 s, kill-and-restart 21,600/21,600 rows with 0 lost and 0 duplicates — see <a href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/bigdata.md">docs/bigdata.md</a>. The 6-hourly live job on GitHub Actions and the dashboard's streaming figures use the <b>local runtime</b> (same <code>StreamProcessor</code>), because Actions runners have no cluster.</li>
+<li>Historical pages (forecasts, detection, benchmarks, streaming) show the held-out 2022 test-year outputs of release v0.1.0 and do not change between live updates. The ERA5 city archive has been extended to 1990–2026 (6,451,680 hourly rows) and <b>retraining is in progress</b>; new metrics will replace these when complete.</li></ul></div></div>
 <div class="card glass span-5"><h2>Build & live status</h2><div id="status"></div><h2 style="margin-top:14px">Links</h2><ul class="prose">
 <li><a href="https://github.com/SirAseef/heatflood-sentinel">Source code</a> · <a href="https://github.com/SirAseef/heatflood-sentinel/releases/tag/v0.1.0">release v0.1.0</a></li>
 <li><a href="https://github.com/SirAseef/heatflood-sentinel/actions/workflows/live-update.yml">Live-update workflow runs</a></li><li><a href="architecture.html">Architecture & reproducibility</a></li></ul></div></section>

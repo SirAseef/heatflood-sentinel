@@ -13,7 +13,11 @@ import subprocess
 from pathlib import Path
 
 SITE = Path(__file__).resolve().parents[1]
-CODE = SITE.parent / "heatflood-sentinel"
+import os
+import shutil
+CODE = Path(os.environ.get("HFS_CODE", SITE.parent / "heatflood-sentinel"))
+SITE_URL = "https://siraseef.github.io/heatflood-sentinel/"
+THESIS = "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan"
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E"
            "%3Cstop offset='0' stop-color='%23FF9A4D'/%3E%3Cstop offset='.5' stop-color='%23FF3D3D'/%3E%3Cstop offset='.5' stop-color='%2338BDF8'/%3E%3Cstop offset='1' stop-color='%232563EB'/%3E"
            "%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E")
@@ -24,12 +28,25 @@ def slug(s: str) -> str:
 
 
 def page(name: str, title: str, desc: str, body: str, script: str, base: str = "", extra_head: str = "") -> None:
+    url = SITE_URL + ("" if name == "index.html" else name)
+    ld = json.dumps({"@context": "https://schema.org", "@type": "WebPage", "name": f"{title} · HeatFlood Sentinel", "url": url, "description": desc,
+                     "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": SITE_URL},
+                     "about": {"@type": "Thesis", "name": THESIS, "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science",
+                               "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}})
     html = f"""<!doctype html>
-<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{title} · HeatFlood Sentinel</title><meta name="description" content="{desc}">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="{url}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="{url}">
 <meta property="og:title" content="{title} · HeatFlood Sentinel"><meta property="og:description" content="{desc}">
-<link rel="icon" href="{FAVICON}">
-<link rel="stylesheet" href="{base}styles/tokens.css"><link rel="stylesheet" href="{base}styles/app.css">
+<meta property="og:image" content="{SITE_URL}media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{title} · HeatFlood Sentinel"><meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{SITE_URL}media/og.png">
+<link rel="icon" href="{base}favicon.svg" type="image/svg+xml"><link rel="icon" href="{base}favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="{base}apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="{base}styles/tokens.css"><link rel="stylesheet" href="{base}styles/app.css"><link rel="stylesheet" href="{base}styles/vip.css">
+<script type="application/ld+json">{ld}</script>
 <script>window.HFS_BASE = '{base}';</script><script src="{base}js/charts.js"></script><script src="{base}js/app.js"></script>{extra_head}</head><body>
 {body.strip()}
 <script>
@@ -56,30 +73,48 @@ CHIP_LOCAL = '<span class="chip">LOCAL STREAMING FALLBACK</span>'
 
 # ---------------------------------------------------------------------------------------------------- HOME
 HOME_BODY = """
-<section class="grid"><div class="card glass span-12 hero">
+<section class="grid"><div class="card glass span-12 hero vip-hero reveal">
   <div class="eyebrow">MS Data Science thesis · NED University of Engineering and Technology, Karachi</div>
-  <h2>Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan</h2>
-  <p class="lead">HeatFlood Sentinel trains LSTM, ConvLSTM, XGBoost and SARIMA models on real ERA5 reanalysis for 20 Pakistani cities (2015–2022),
-  benchmarks them honestly on the held-out year 2022, detects heatwaves and flash-flood risk with calibrated classifiers, and pushes a live
-  Open-Meteo feed through a streaming alert engine. This site is the public, static edition of the project dashboard; its live snapshot is regenerated every 6 hours by GitHub Actions.</p>
-  <div class="people"><div><b>Aseef Ahmed</b>Student · DS-029/2025/26</div><div><b>Dr. Maria Andaleeb Siddiqui</b>Supervisor</div><div><b>NED UET, Karachi</b>MS Data Science</div><div><b id="livestamp">–</b>Latest live snapshot</div></div>
-  <div class="btnrow"><a class="btn primary" href="live.html">● Live alerts</a><a class="btn" href="https://github.com/SirAseef/heatflood-sentinel">⌥ Source code</a>
-  <a class="btn" href="https://github.com/SirAseef/heatflood-sentinel/releases/tag/v0.1.0">⬇ Release v0.1.0</a><a class="btn" href="benchmark.html">▦ Benchmarks</a><a class="btn" href="research.html">§ Research</a></div>
+  <h2 class="hero-brand"><span class="grad">HeatFlood Sentinel</span></h2>
+  <p class="hero-title">Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan</p>
+  <p class="lead">LSTM, ConvLSTM, XGBoost and SARIMA models trained on ERA5 reanalysis for 20 Pakistani cities, benchmarked on a held-out year,
+  calibrated heatwave and flash-flood-risk detectors, a Hadoop/YARN · Spark · Kafka pipeline, and a live Open-Meteo feed pushed through a streaming
+  alert engine every 6 hours.</p>
+  <div class="people"><div><b>Aseef Ahmed</b>Author · MS Data Science (DS-029/2025/26)</div><div><b>Dr. Maria Andaleeb Siddiqui</b>Supervisor</div><div><b>NED UET, Karachi</b>Dept. of CS &amp; IT</div><div><b id="livestamp">–</b>Latest live snapshot</div></div>
+  <div class="btnrow"><a class="btn primary" href="#live-risk">● Live risk now</a><a class="btn" href="#demo">▶ Watch the demo</a><a class="btn" href="media/HeatFlood_Defence_AseefAhmed_v2.pdf">◧ Defence slides</a>
+  <a class="btn" href="https://github.com/SirAseef/heatflood-sentinel">⌥ GitHub</a><a class="btn" href="#cite">❝ Cite</a></div>
+  <ul class="factstrip" aria-label="Key facts"><li><b>20</b>cities</li><li><b>1990–2026</b>ERA5 hourly archive</li><li><b>6,451,680</b>hourly city rows</li><li><b>Hadoop · Spark · Kafka</b>executed, single node</li><li><b>6 h</b>live refresh</li></ul>
 </div></section>
+<div id="retrain"></div>
 <section class="grid" id="kpis"></section>
+<section class="grid">
+  <div class="card glass span-12 sechead reveal" id="live-risk"><div class="eyebrow">Live risk dashboard</div><h2>Where the risk is right now</h2><p class="sub">Open-Meteo forecast and current conditions, bias-corrected toward ERA5, scored by the trained detectors and the alert engine. Refreshed every 6 hours by GitHub Actions.</p></div></section>
 <section class="grid">
   <div class="card glass span-7"><h2>Pakistan hazard map <span class="chip live">LIVE</span></h2><p class="sub">20 reference cities coloured by the current live alert level. Tap a city name in the table to open its page.</p><div id="map" class="chart"></div></div>
   <div class="card glass span-5"><h2>Top at-risk cities now</h2><p class="sub">Ranked by model probability plus 72-h forecast heat checks (live snapshot).</p><div id="risk"></div>
   <h2 style="margin-top:16px">Alert replay <span class="chip">2022 test year</span></h2><p class="sub">Alert-engine events from the streamed replay of held-out ERA5 (Apr–Sep 2022), replayed in your browser.</p><div class="feed" id="feed" style="max-height:260px"></div></div>
 </section>
 <section class="grid">
-  <div class="card glass span-6"><h2>Headline accuracy (test 2022)</h2><p class="sub">Daily Tmax RMSE (°C) by lead day, all 20 cities pooled — lower is better.</p><div id="skill" class="chart"></div></div>
+  <div class="card glass span-6"><h2>Headline accuracy (test 2022) <span class="chip retrain">v0.1.0 · retraining</span></h2><p class="sub">Daily Tmax RMSE (°C) by lead day, all 20 cities pooled — lower is better.</p><div id="skill" class="chart"></div></div>
   <div class="card glass span-6"><h2>Live update history</h2><p class="sub">Each row is one scheduled GitHub Actions run of <code>hfs.streaming.live_feed</code> (every 6 h).</p><div id="hist"></div></div>
 </section>
-<section class="grid"><div class="card glass span-12"><h2>Explore the project</h2><p class="sub">Every page reads the project's real outputs — pre-rendered API responses and the live snapshot.</p><div class="cards" id="explore"></div></div></section>
+<section class="grid" id="demo"><div class="card glass span-8 reveal"><div class="eyebrow">Demonstration</div><h2>4-minute 59-second walkthrough</h2><p class="sub">Narrated tour of the dashboard and thesis results. 1080p on desktop, 720p on small screens; English subtitles.</p>
+<div class="video"><video controls preload="none" playsinline poster="media/demo_poster.jpg" aria-label="HeatFlood Sentinel demonstration video">
+<source src="media/HeatFlood_Sentinel_Demo_720p.mp4" type="video/mp4" media="(max-width: 900px)"><source src="media/HeatFlood_Sentinel_Demo_1080p.mp4" type="video/mp4">
+<track kind="subtitles" src="media/HeatFlood_Sentinel_Demo.vtt" srclang="en" label="English"></video></div>
+<p class="muted small" style="margin-top:8px">Also available: <a href="https://drive.google.com/file/d/1xyJU2_eycr0uaFPmzhPnOhxRq75VEuSG/view?usp=drivesdk">4K master on Google Drive</a> · <a href="media/HeatFlood_Sentinel_Demo_1080p.mp4" download>download 1080p</a> · <a href="https://github.com/SirAseef/heatflood-sentinel/tree/main/docs/demo">docs/demo</a></p></div>
+<div class="card glass span-4 reveal"><div class="eyebrow">Thesis defence</div><h2>Slides &amp; evaluator Q&amp;A</h2><p class="sub">Defence deck v2 (41 slides) and the prepared evaluator questions.</p>
+<div class="doclist"><a class="doc" href="media/HeatFlood_Defence_AseefAhmed_v2.pdf"><span class="ico">◧</span><b>Defence deck (PDF)</b><span>41 slides · v2</span></a>
+<a class="doc" href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/defence/HeatFlood_Defence_AseefAhmed_v2.pptx"><span class="ico">▤</span><b>Defence deck (PPTX)</b><span>Source on GitHub</span></a>
+<a class="doc" href="media/Evaluator_QA_AseefAhmed.pdf"><span class="ico">?</span><b>Evaluator Q&amp;A (PDF)</b><span>Anticipated questions &amp; answers</span></a>
+<a class="doc" href="https://github.com/SirAseef/heatflood-sentinel"><span class="ico">⌥</span><b>Source code</b><span>github.com/SirAseef/heatflood-sentinel</span></a></div></div></section>
+<section class="grid" id="cite"><div class="card glass span-12 reveal"><div class="eyebrow">Citation</div><h2>Cite this work <button class="copy" data-copy="#bibtex">Copy BibTeX</button></h2><pre class="code" id="bibtex"></pre></div></section>
+<section class="grid"><div class="card glass span-12 reveal"><h2>Explore the project</h2><p class="sub">Every page reads the project's real outputs — pre-rendered API responses and the live snapshot.</p><div class="cards" id="explore"></div></div></section>
 """
 HOME_JS = """
+$('#bibtex').textContent = BIBTEX;
 shell('index', 'HeatFlood Sentinel', 'Heatwave and flash-flood forecasting and detection for Pakistan — public research edition.', '<span class="chip real">REAL ERA5 DATA</span><span class="chip live">LIVE FEED · 6-HOURLY</span><span class="chip proxy">FLOOD = PROXY LABEL</span>');
+retrainNote('#retrain');
 (async () => {
   const [s, live, hist] = await Promise.all([api('/summary'), api('/live').catch(() => null), api('/live/history').catch(() => [])]);
   const det = s.detection.filter(r => r.model === 'xgboost');
@@ -90,10 +125,10 @@ shell('index', 'HeatFlood Sentinel', 'Heatwave and flash-flood forecasting and d
   const hot = live ? live.cities.slice().sort((a, b) => (b.current.temperature_2m ?? -99) - (a.current.temperature_2m ?? -99))[0] : null;
   $('#kpis').innerHTML = kpi('heat', 'Live open alerts', openLive, live ? 'snapshot ' + ago(live.generated_utc) : '–') +
     kpi('heat', 'Hottest city now', hot ? fmt(hot.current.temperature_2m, 1) + '<small> °C</small>' : '–', hot ? hot.city : '') +
-    kpi('ok', 'Stream throughput', fmt(s.stream.msgs_per_s, 0) + '<small> msgs/s</small>', 'p95 batch ' + fmt(s.stream.batch_ms?.p95, 0) + ' ms · local fallback') +
+    kpi('ok', 'Stream throughput', fmt(s.stream.msgs_per_s, 0) + '<small> msgs/s</small>', 'p95 batch ' + fmt(s.stream.batch_ms?.p95, 0) + ' ms · local runtime') +
     kpi('violet', 'Alert events (replay)', s.alerts_total.toLocaleString(), s.stream.msgs.toLocaleString() + ' events streamed') +
     kpi('violet', 'Heatwave CSI (test)', fmt(hw.csi), 'XGBoost, lead 1 d · F1 ' + fmt(hw.f1)) + kpi('flood', 'Flood-risk CSI (test)', fmt(ff.csi), 'XGBoost, lead 6 h · PR-AUC ' + fmt(ff.pr_auc)) +
-    kpi('ok', 'LSTM Tmax RMSE, day+1', fmt(lstm1.rmse) + '<small> °C</small>', 'NSE ' + fmt(lstm1.nse, 3)) + kpi('heat', 'Hourly rows (ERA5)', s.features.hourly_rows.toLocaleString(), s.features.cities + ' cities · 2015–2022');
+    kpi('ok', 'LSTM Tmax RMSE, day+1', fmt(lstm1.rmse) + '<small> °C</small>', 'NSE ' + fmt(lstm1.nse, 3)) + kpi('heat', 'Hourly rows (model run)', s.features.hourly_rows.toLocaleString(), s.features.cities + ' cities · 2015–2022 · v0.1.0');
   if (live) {
     const pts = live.cities.map(c => { const l = maxLevel(c); return { name: c.city, lat: c.lat, lon: c.lon, color: LEVEL_COLORS[l], pulse: l >= 3, r: 7,
       title: `${c.city}: ${fmt(c.current.temperature_2m, 1)} °C now · heat p=${fmt(c.heatwave_prob_model)} · flood p=${fmt(c.flood_prob_model)} · ${LEVELS[l]}` }; });
@@ -119,7 +154,7 @@ shell('index', 'HeatFlood Sentinel', 'Heatwave and flash-flood forecasting and d
     ['flood', '☂', 'Flash-Flood Detection', 'Flash-flood-risk proxy detection on 6-h and 24-h windows.'], ['benchmark', '▦', 'Model Benchmarks', 'Leaderboards, skill scores and Diebold–Mariano significance.'],
     ['pipeline', '⇶', 'Streaming & Scalability', 'Latency, throughput, chaos tests and scaling evidence.'], ['architecture', '⬡', 'Architecture', 'Five-layer design, data flow and deployment diagrams.'],
     ['data', '▤', 'Data & Methodology', 'ERA5 catalogue, QC, hazard definitions and limitations.'], ['cases', '◷', 'Case Study: Jacobabad', 'The 2022 pre-monsoon heat and monsoon floods, replayed.'],
-    ['research', '§', 'Research & Publications', 'Thesis and two IEEE manuscripts in preparation.'], ['api', '{ }', 'API Docs', 'The FastAPI REST interface (OpenAPI), with static mirrors.']];
+    ['research', '§', 'Research & Publications', 'Thesis, defence deck, demo video and two IEEE manuscripts in preparation.'], ['api', '{ }', 'API Docs', 'The FastAPI REST interface (OpenAPI), with static mirrors.']];
   $('#explore').innerHTML = P.map(([h, i, t, d]) => `<a class="pcard" href="${h}.html"><span class="ico">${i}</span><b>${t}</b><span>${d}</span></a>`).join('');
 })();
 """

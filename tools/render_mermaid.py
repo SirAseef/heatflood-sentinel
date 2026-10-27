@@ -12,7 +12,6 @@ import re
 import sys
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
 
 SITE = Path(__file__).resolve().parents[1]
 
@@ -21,6 +20,38 @@ def main(mermaid_js: str) -> None:
     page_p = SITE / "architecture.html"
     src = page_p.read_text()
     blocks = re.findall(r'<pre class="mermaid">(.*?)</pre>', src, re.S)
+    if mermaid_js == "--ink":
+        render_ink(blocks)
+    else:
+        render_local(mermaid_js, blocks)
+    for i, b in enumerate(blocks, 1):
+        rep = (f'<div class="mermaid"><a href="figures/arch_{i}.svg"><img src="figures/arch_{i}.svg" alt="Architecture diagram {i}" style="width:100%;height:auto;display:block"></a></div>'
+               f'<details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">Diagram source (Mermaid)</summary><pre class="code">{b.strip()}</pre></details>')
+        src = src.replace(f'<pre class="mermaid">{b}</pre>', rep, 1)
+    src = re.sub(r"\(async \(\) => \{ const dark.*?\}\)\(\);\n", "", src, flags=re.S)
+    page_p.write_text(src)
+
+
+THEME = {"theme": "base", "securityLevel": "strict", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "15px",
+         "primaryColor": "#E0F7FB", "primaryBorderColor": "#0891B2", "primaryTextColor": "#0B1226", "lineColor": "#475569", "secondaryColor": "#EDE9FE",
+         "tertiaryColor": "#F8FAFC", "clusterBkg": "#F1F5F9", "clusterBorder": "#94A3B8"}, "flowchart": {"htmlLabels": False, "curve": "basis"}}
+
+
+def render_ink(blocks):
+    """No local Chromium: render through the public mermaid.ink service (same mermaid theme)."""
+    import base64
+    import json
+    import requests
+    for i, b in enumerate(blocks, 1):
+        payload = base64.urlsafe_b64encode(json.dumps({"code": html.unescape(b).strip(), "mermaid": THEME}).encode()).decode()
+        r = requests.get("https://mermaid.ink/svg/" + payload, timeout=60)
+        r.raise_for_status()
+        (SITE / "figures" / f"arch_{i}.svg").write_text(r.text)
+        print("rendered (mermaid.ink)", i, len(r.text))
+
+
+def render_local(mermaid_js, blocks):
+    from playwright.sync_api import sync_playwright
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path="/usr/bin/chromium", args=["--no-sandbox"])
         pg = br.new_page()
@@ -37,12 +68,6 @@ def main(mermaid_js: str) -> None:
             (SITE / "figures" / f"arch_{i}.svg").write_text(svg)
             print("rendered", i, len(svg))
         br.close()
-    for i, b in enumerate(blocks, 1):
-        rep = (f'<div class="mermaid"><a href="figures/arch_{i}.svg"><img src="figures/arch_{i}.svg" alt="Architecture diagram {i}" style="width:100%;height:auto;display:block"></a></div>'
-               f'<details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">Diagram source (Mermaid)</summary><pre class="code">{b.strip()}</pre></details>')
-        src = src.replace(f'<pre class="mermaid">{b}</pre>', rep, 1)
-    src = re.sub(r"\(async \(\) => \{ const dark.*?\}\)\(\);\n", "", src, flags=re.S)
-    page_p.write_text(src)
 
 
 if __name__ == "__main__":
