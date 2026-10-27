@@ -102,5 +102,18 @@
 "mean_temp_c": 24.97,
 "max_rain_24h_fc_mm": 0.6,
 "run": "Live site update run 40454046910"
+},
+{
+"generated_utc": "2026-10-27T12:22:19.651643+00:00",
+"events_streamed": 19460,
+"era5_latest": "2026-10-21 23:00:00",
+"forecast_host": "https://api.open-meteo.com/v1/forecast",
+"open_alerts": 2,
+"max_level": 2,
+"hottest_city": "Turbat",
+"hottest_c": 35.8,
+"mean_temp_c": 26.45,
+"max_rain_24h_fc_mm": 0.8,
+"run": "Live site update run 40503073390"
 }
 ]
