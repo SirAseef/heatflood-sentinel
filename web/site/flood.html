@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Flash-Flood Detection · HeatFlood Sentinel</title><meta name="description" content="Flash-Flood Detection: detection scores, probability timelines and alert events on the held-out 2022 test year.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/flood.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/flood.html">
+<meta property="og:title" content="Flash-Flood Detection · HeatFlood Sentinel"><meta property="og:description" content="Flash-Flood Detection: detection scores, probability timelines and alert events on the held-out 2022 test year.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Flash-Flood Detection · HeatFlood Sentinel"><meta name="twitter:description" content="Flash-Flood Detection: detection scores, probability timelines and alert events on the held-out 2022 test year."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Flash-Flood Detection \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/flood.html", "description": "Flash-Flood Detection: detection scores, probability timelines and alert events on the held-out 2022 test year.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-12"><h2>Detection scores — held-out 2022 <span class="chip proxy">reanalysis PROXY</span></h2>
+<p class="sub">Rare-event scores (CSI, F1, POD, FAR, PR-AUC); accuracy is never a headline metric. Rows from <code>results/detection_full.json</code>.</p><div id="dettbl"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Probability timeline <select id="hcity" style="float:right"></select></h2><div class="controls"><label>Lead <select id="hlead"><option>6h</option><option>24h</option></select></label></div>
+<p class="sub">Calibrated XGBoost probability vs labelled events (shaded), 2022-07 → 2022-09. Dashed = decision threshold.</p><div id="tl" class="chart"></div><div class="metricrow" id="tlm"></div></div>
+<div class="card glass span-5"><h2>Definition & detectors</h2><div class="prose"><p><b>Flash-flood risk (PROXY)</b>: ERA5 does not observe floods, so labels are reanalysis proxies. Default <code>proxy_6h_api</code>: 6-h total ≥ max(50 mm, local p99) and antecedent precipitation index &gt; local p75 — too rare at ERA5 city points to train on, so detectors use the configured alternative <code>p995_24h</code>: 24-h total ≥ local p99.5 (DEVIATIONS.md).</p><p>Detectors: calibrated XGBoost at lead 6 h and 24 h vs a persistence rule. ~25 km cells cannot resolve convective cells or urban drainage — validate against NDMA/PDMA event records.</p></div></div></section>
+<section class="grid"><div class="card glass span-6"><h2>Alert events by city (stream replay)</h2><p class="sub">Created/escalated flash-flood alerts at level ≥ Watch, Apr–Sep 2022.</p><div id="bycity" class="chart"></div></div>
+<div class="card glass span-6"><h2>Alert log</h2><p class="sub">Latest alert-engine events with top SHAP drivers.</p><div id="alog"></div></div></section>
+<script>
+shell('flood', 'Flash-Flood Detection', 'Flash-flood-risk detection (T4) on 6-h and 24-h windows — reanalysis proxy labels.', '<span class="chip real">REAL ERA5 · TEST 2022</span><span class="chip proxy">FLOOD = PROXY LABEL</span>');
+(async () => {
+  const HZ = 'flash_flood';
+  const b = await api('/benchmarks?track=daily'); const res = (b.detection_full.results || []).filter(r => r.hazard === HZ);
+  const g = (l, m = 'xgboost') => res.find(r => r.lead === l && r.model === m) || {};
+  $('#kpis').innerHTML = kpi('flood', 'XGBoost CSI · lead 6h', fmt(g('6h').csi), 'F1 ' + fmt(g('6h').f1) + ' · FAR ' + fmt(g('6h').far)) +
+    kpi('flood', 'XGBoost CSI · lead 24h', fmt(g('24h').csi), 'PR-AUC ' + fmt(g('24h').pr_auc)) +
+    kpi('violet', 'Rule baseline CSI · 6h', fmt(g('6h', 'rule_persistence').csi), 'persistence rule') +
+    kpi('ok', 'Test events (lead 6 h)', g('6h').positives ?? '–', 'of ' + (g('6h').n ?? 0).toLocaleString() + ' city-windows');
+  $('#dettbl').innerHTML = table(res, [{ k: 'lead', label: 'Lead' }, { k: 'model', label: 'Model' }, { k: 'positives', label: 'Events', num: 1 }, { k: 'n', label: 'n', num: 1 },
+    { k: 'csi', label: 'CSI', num: 1, f: fmt }, { k: 'f1', label: 'F1', num: 1, f: fmt }, { k: 'pod', label: 'POD', num: 1, f: fmt }, { k: 'far', label: 'FAR', num: 1, f: fmt },
+    { k: 'pr_auc', label: 'PR-AUC', num: 1, f: fmt }, { k: 'roc_auc', label: 'ROC-AUC', num: 1, f: fmt }, { k: 'brier', label: 'Brier', num: 1, f: v => fmt(v, 4) }, { k: 'threshold', label: 'Thr', num: 1, f: v => fmt(v, 3) }], { best: r => r.model === 'xgboost' })
+    + `<p class="muted" style="font-size:12px">Default definition <code>proxy_6h_api</code> yields only ${(b.detection_full.proxy_6h_api_positives||{}).train ?? '–'}/${(b.detection_full.proxy_6h_api_positives||{}).val ?? '–'}/${(b.detection_full.proxy_6h_api_positives||{}).test ?? '–'} positives (train/val/test) at ERA5 city points; detectors use <code>p995_24h</code>.</p>`;
+  const cities = await api('/cities'); $('#hcity').innerHTML = cities.map(c => `<option>${c.city}</option>`).join(''); $('#hcity').value = 'Karachi';
+  const draw = async () => { const L = $('#hlead').value; const d = (await api(`/detections?hazard=${HZ}&lead=${L}&entity=${encodeURIComponent($('#hcity').value)}`)).filter(r => r.time >= '2022-07-01' && r.time <= '2022-09-30T23:59');
+    const bands = []; let s = null; d.forEach((r, i) => { if (r.label && s === null) s = r.time; if ((!r.label || i === d.length - 1) && s !== null) { bands.push([s, r.time, '#ef444433']); s = null; } });
+    const thr = g(L).threshold;
+    HFS_CHARTS.lineChart($('#tl'), [{ name: 'p', label: 'P(event)', color: '#38BDF8', width: 1.8, points: d.map(r => [r.time, r.probability]) },
+      { name: 't', label: 'decision threshold', color: '#FBBF24', dash: '4 4', points: d.length && thr != null ? [[d[0].time, thr], [d[d.length - 1].time, thr]] : [] }], { height: 240, ymin: 0, ymax: 1, bands });
+    const tp = d.filter(r => r.label && r.predicted_flag).length, fn = d.filter(r => r.label && !r.predicted_flag).length, fp = d.filter(r => !r.label && r.predicted_flag).length;
+    $('#tlm').innerHTML = `<div class="metric">Events<b>${tp + fn}</b></div><div class="metric">Hits<b>${tp}</b></div><div class="metric">False alarms<b>${fp}</b></div><div class="metric">CSI (this city)<b>${tp + fn + fp ? fmt(tp / (tp + fn + fp)) : '–'}</b></div><div class="metric"><a href="${cityHref($('#hcity').value)}">City page →</a></div>`; };
+  $('#hcity').onchange = draw; $('#hlead').onchange = draw; draw();
+  
+  
+  const al = await api('/alerts?hazard=' + HZ + '&limit=100000');
+  const cnt = {}; al.filter(a => a.level >= 2 && ['created', 'escalated'].includes(a.action)).forEach(a => { cnt[a.entity_id] = (cnt[a.entity_id] || 0) + 1; });
+  const items = Object.entries(cnt).map(([c, v]) => ({ label: c, value: v })).sort((a, b) => b.value - a.value).slice(0, 14);
+  if (items.length) HFS_CHARTS.barChart($('#bycity'), items, { fmt: v => v.toFixed(0), from: '#38BDF8', to: '#2563EB' }); else $('#bycity').innerHTML = '<p class="muted">No alerts at level ≥ Watch.</p>';
+  $('#alog').innerHTML = table(al.slice(-80).reverse(), [{ k: 'issue_time', label: 'Time (UTC)', f: v => `<span class="mono">${v.slice(0, 16).replace('T', ' ')}</span>` }, { k: 'entity_id', label: 'City', f: cityLink },
+    { k: 'level', label: 'Level', f: sev }, { k: 'action', label: 'Action' }, { k: 'probability', label: 'p', num: 1, f: fmt }, { k: 'drivers', label: 'Top drivers', f: v => (v || []).slice(0, 3).map(d => d.feature).join(', ') }], { max: 360 });
+})();
+</script></body></html>

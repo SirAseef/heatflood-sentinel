@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Architecture · HeatFlood Sentinel</title><meta name="description" content="HeatFlood Sentinel architecture, data flow, stream contract and deployment.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/architecture.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/architecture.html">
+<meta property="og:title" content="Architecture · HeatFlood Sentinel"><meta property="og:description" content="HeatFlood Sentinel architecture, data flow, stream contract and deployment.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Architecture · HeatFlood Sentinel"><meta name="twitter:description" content="HeatFlood Sentinel architecture, data flow, stream contract and deployment."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Architecture \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/architecture.html", "description": "HeatFlood Sentinel architecture, data flow, stream contract and deployment.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><div class="note info"><b>Execution status.</b> The Big Data path was <b>executed</b> on a single-node pseudo-distributed cluster: Hadoop 3.3.6 (HDFS + YARN), Spark 3.5.9 (batch ETL, MLlib baseline, Structured Streaming on YARN) and Kafka 3.9.2 (KRaft) — 2,739 events/s on a 58,560-event backlog, p50/p95 latency to HDFS 2.8/5.5 s, kill-and-restart 21,600/21,600 rows with 0 lost and 0 duplicates (<a href="https://github.com/SirAseef/heatflood-sentinel/blob/main/docs/bigdata.md">docs/bigdata.md</a>). The <code>docker compose</code> stack was not used for that run, and no multi-node cluster was run. The dashboard's live job (GitHub Actions) uses the local runtime with the same <code>StreamProcessor</code>.</div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Five-layer architecture</h2><p class="sub">Ingestion → storage/processing → models → streaming inference & alerting → serving. Every runtime calls the same <code>StreamProcessor</code> and feature library used for training (train–serve parity). Dashed = provided but not executed (PMD station adapter, Copernicus CDS download). Kafka and Spark were executed on a single node.</p>
+<div class="mermaid"><a href="figures/arch_1.svg"><img src="figures/arch_1.svg" alt="Architecture diagram 1" style="width:100%;height:auto;display:block"></a></div><details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">Diagram source (Mermaid)</summary><pre class="code">flowchart LR
+  subgraph L1[1 · Ingestion]
+    A1[ERA5 via Open-Meteo archive<br/>20 cities hourly + 2° grid] --> B
+    A2[Open-Meteo forecast / current<br/>live feed] --> P
+    A3[PMD station adapter<br/>synthetic placeholder] -.-> B
+    A4[Copernicus CDS<br/>full 0.25° ERA5, scripted] -.-> B
+  end
+  subgraph L2[2 · Storage & processing]
+    B[(Bronze<br/>raw parquet / NetCDF)] --> S[(Silver<br/>units, QC bitmask, PKT days)]
+    S --> G[(Gold<br/>climatology, labels, features)]
+  end
+  subgraph L3[3 · Models]
+    G --> M1[Baselines<br/>persistence · climatology]
+    G --> M2[SARIMA · XGBoost]
+    G --> M3[LSTM · ConvLSTM · CNN detector]
+    G --> M4[XGBoost detectors<br/>isotonic + CSI threshold]
+  end
+  subgraph L4[4 · Streaming inference & alerting]
+    P[Producer<br/>replay / live] --> K{{Local queue<br/>executed · results + live job}}
+    P --> KF{{Kafka KRaft + Spark Structured Streaming on YARN<br/>executed · single-node pseudo-distributed}}
+    K --> SP[StreamProcessor<br/>validate · dedup · watermark · features · inference]
+    KF --> SP
+    SP -->|DLQ| D[(dead-letter)]
+    SP --> AE[Alert engine<br/>levels 0–4, hysteresis, cooldown]
+  end
+  subgraph L5[5 · Serving]
+    AE --> API[FastAPI /api/v1<br/>SSE alert stream]
+    G --> API
+    API --> UI[Dashboard]
+  end
+  M2 & M3 & M4 --> SP</pre></details></div></section>
+<section class="grid"><div class="card glass span-6"><h2>How this public site is deployed</h2><p class="sub">GitHub Pages (static) + GitHub Actions (scheduled live pipeline). No server, no secrets beyond the built-in token.</p>
+<div class="mermaid"><a href="figures/arch_2.svg"><img src="figures/arch_2.svg" alt="Architecture diagram 2" style="width:100%;height:auto;display:block"></a></div><details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">Diagram source (Mermaid)</summary><pre class="code">flowchart TB
+  CR[(heatflood-sentinel main<br/>code · configs · results · workflow)] -->|checkout| WF
+  RT[(gh-pages runtime/<br/>detectors · climatologies · thresholds)] --> WF
+  OM[Open-Meteo forecast + ERA5 archive] --> WF
+  WF[GitHub Actions · every 6 h<br/>hfs.streaming.live_feed<br/>bias correction → local stream → alert engine] -->|commit api/live.json| SR[(gh-pages branch)]
+  EX[tools/build_static.py<br/>FastAPI TestClient export] -->|api/*.json| SR
+  SR --> GP[GitHub Pages<br/>siraseef.github.io/heatflood-sentinel]
+  GP --> BR[Browser<br/>static adapter answers /api/v1 calls from JSON]</pre></details></div>
+<div class="card glass span-6"><h2>Stream processing sequence</h2><p class="sub">Per micro-batch contract shared by every runtime.</p>
+<div class="mermaid"><a href="figures/arch_3.svg"><img src="figures/arch_3.svg" alt="Architecture diagram 3" style="width:100%;height:auto;display:block"></a></div><details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:12px">Diagram source (Mermaid)</summary><pre class="code">sequenceDiagram
+  participant Src as Producer (replay/live)
+  participant Q as Queue (local fallback)
+  participant SP as StreamProcessor
+  participant M as Models
+  participant AE as Alert engine
+  Src->>Q: ObsEvent JSON (UUIDv5 id)
+  Q->>SP: micro-batch
+  SP->>SP: validate (pydantic) · dedup · 2-h watermark → DLQ
+  SP->>SP: features (same library as training)
+  SP->>M: heatwave (per PKT day) · flood (per 6-h window) · t2m +6/+24 h
+  M-->>SP: calibrated probabilities + SHAP drivers
+  SP->>AE: evaluate levels, hysteresis, cooldown
+  AE-->>SP: created / escalated / resolved events</pre></details></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Modules, stream contract, alert engine & deployment profiles</h2><div class="prose"><p>HeatFlood Sentinel follows the five-layer design of the SRS (§4):
+ingestion → storage/processing → modelling → streaming inference &amp;
+alerting → serving. Every runtime (local fallback, Kafka consumer, Spark
+<code>foreachBatch</code>) calls the <strong>same</strong>
+<code>StreamProcessor</code> and the <strong>same</strong> feature
+library used for batch training, so training and serving features cannot
+drift apart (train–serve parity).</p>
+<h2 id="modules-srchfs">Modules (<code>src/hfs</code>)</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Package</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ingestion</code></td>
+<td><code>open_meteo</code> (ERA5 archive, cities + grid),
+<code>era5</code> (CDS), <code>pmd_adapter</code>,
+<code>replay_simulator</code>, <code>fault_injector</code>,
+<code>validators</code></td>
+</tr>
+<tr class="even">
+<td><code>features</code></td>
+<td>unit conversion, QC bitmask, calendar-day climatology (train-only),
+hazard labels, lags/rolling windows, <code>pipeline</code> (bronze →
+silver → gold)</td>
+</tr>
+<tr class="odd">
+<td><code>models</code></td>
+<td>baselines, SARIMA (Fourier seasonality), XGBoost
+forecaster/classifier, LSTM, ConvLSTM (in-house cell), isotonic
+calibration</td>
+</tr>
+<tr class="even">
+<td><code>training</code></td>
+<td>hourly, daily and grid tracks, detection, time-only splits</td>
+</tr>
+<tr class="odd">
+<td><code>benchmark</code></td>
+<td>metrics (RMSE/MAE/NSE/skill, CSI/POD/FAR, PR-AUC, Brier),
+Diebold–Mariano + block bootstrap + Holm, scalability harness, report
+generator</td>
+</tr>
+<tr class="even">
+<td><code>streaming</code></td>
+<td><code>processor</code> (shared micro-batch logic),
+<code>alert_engine</code>, <code>local_stream</code> (replay + chaos),
+<code>kafka_consumer</code>, <code>producer</code>,
+<code>spark_stream</code>, <code>live_feed</code>,
+<code>latency</code></td>
+</tr>
+<tr class="odd">
+<td><code>api</code></td>
+<td>FastAPI app, read-only data access, token auth for ack/refresh</td>
+</tr>
+<tr class="even">
+<td><code>common</code></td>
+<td>config loader, schemas (pydantic <code>ObsEvent</code>), PKT time
+helpers, structured logging</td>
+</tr>
+</tbody>
+</table>
+<h2 id="stream-processing-contract">Stream processing contract</h2>
+<p>Per micro-batch: schema/range validation (pydantic) → DLQ; dedup by
+deterministic <code>event_id</code> (UUIDv5 of city|time) within a 2-h
+watermark; late events beyond the watermark → DLQ; per-entity 36-day
+buffers; features from <code>hfs.features.pipeline</code>; heatwave
+evaluation once per completed PKT day (lead 1 d); flash-flood evaluation
+at the end of each 6-h window; XGBoost t2m +6/+24 h forecasts; alert
+engine; per-stage latency stamps. Checkpoint/restore covers dedup keys,
+buffers, open alerts and evaluated keys (exactly-once alert emission on
+restart, verified by the <code>kill_restart</code> chaos scenario).</p>
+<h2 id="alert-engine">Alert engine</h2>
+<p>Probability → level: Advisory ≥ 0.30, Watch ≥ 0.55, Warning ≥ 0.75,
+Emergency ≥ 0.90 (<code>configs/alerts.yaml</code>). Heatwave Warning
+additionally needs ≥ 2 consecutive hot days and Emergency ≥ 3; flood
+Emergency needs ≥ 100 mm/6 h. Escalation is immediate, de-escalation
+needs 2 consecutive lower evaluations, same-level re-notification waits
+3 h.</p>
+<h2 id="deployment-profiles">Deployment profiles</h2>
+<ul>
+<li><strong>dev-lite (executed):</strong> single process, local fallback
+queue, Parquet medallion, FastAPI + static dashboard.</li>
+<li><strong>docker compose (<code>make up</code>, provided, not executed
+in the sandbox):</strong> Kafka 3.7 KRaft, topic provisioning, API,
+replay + live producers, Python stream consumer;
+<code>make up-full</code> adds Spark 3.5 master/worker and the
+Structured Streaming job (<code>infra/spark/submit.sh</code>).</li>
+</ul>
+</div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Reproducibility</h2><div class="prose"><h2 id="environment">Environment</h2>
+<ul>
+<li>Python ≥ 3.10 (developed on 3.12, CI on 3.11), CPU-only PyTorch is
+enough.</li>
+<li><code>make setup</code> installs <code>requirements-dev.txt</code>
+(core + pytest/httpx/ruff) and creates <code>.env</code> from
+<code>.env.example</code>.</li>
+<li>Optional: <code>requirements-stream.txt</code> (kafka-python,
+pyspark), <code>cdsapi</code> for <code>make data-cds</code>,
+<code>optuna</code> for <code>make tune</code>, Playwright or a system
+Chromium for <code>make screenshots</code>.</li>
+</ul>
+<h2 id="one-command-run">One-command run</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> setup</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> reproduce      <span class="co"># data → features → train → benchmark → stream → live → scale → report</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> api            <span class="co"># http://127.0.0.1:8000 (dashboard + /docs)</span></span></code></pre></div>
+<p><code>make reproduce</code> needs internet access to Open-Meteo
+(archive + forecast). On the reference machine (2 vCPU, linux-arm64, CPU
+torch) the whole chain takes roughly 1.5–2 h; the slowest steps are
+SARIMA and the stream replay.</p>
+<h2 id="determinism">Determinism</h2>
+<ul>
+<li>Seeds: <code>configs/models.yaml</code> (<code>seed: 42</code>; LSTM
+daily also 7 and 2024). Torch uses 2 threads.</li>
+<li>Splits are time-based and fixed in <code>configs/app.yaml</code>;
+climatologies and thresholds are fitted on train only.</li>
+<li>Feature schema is hashed (<code>feature_spec_hash</code> in
+<code>results/features_summary.json</code>).</li>
+<li>Event IDs are UUIDv5 of <code>city|timestamp</code>, so replays are
+idempotent.</li>
+<li>Remaining nondeterminism: XGBoost <code>hist</code> multithreading
+and PyTorch CPU kernels can move metrics in the 3rd decimal. The live
+snapshot depends on the time it is run.</li>
+</ul>
+<h2 id="step-map">Step map</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Make target</th>
+<th>Module</th>
+<th>Outputs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>data</code></td>
+<td><code>hfs.ingestion.open_meteo cities / grid</code></td>
+<td><code>data/bronze</code>, <code>data/raw/openmeteo</code></td>
+</tr>
+<tr class="even">
+<td><code>features</code></td>
+<td><code>hfs.features.pipeline</code></td>
+<td><code>data/silver</code>, <code>data/gold</code>,
+<code>results/features_summary.json</code></td>
+</tr>
+<tr class="odd">
+<td><code>train-hourly</code>, <code>train-daily</code>,
+<code>train-grid</code>, <code>detect</code></td>
+<td><code>hfs.training.*</code></td>
+<td><code>models/</code>, <code>results/train_*.json</code>,
+<code>data/gold/preds</code></td>
+</tr>
+<tr class="even">
+<td><code>benchmark</code></td>
+<td><code>hfs.benchmark.runner</code></td>
+<td><code>results/benchmark.json</code>,
+<code>results/tables/*</code></td>
+</tr>
+<tr class="odd">
+<td><code>stream</code></td>
+<td><code>hfs.streaming.local_stream</code></td>
+<td><code>results/streaming_local.json</code></td>
+</tr>
+<tr class="even">
+<td><code>live</code></td>
+<td><code>hfs.streaming.live_feed</code></td>
+<td><code>data/gold/live/live_snapshot.json</code></td>
+</tr>
+<tr class="odd">
+<td><code>scale</code></td>
+<td><code>hfs.benchmark.scalability</code></td>
+<td><code>results/scalability_local.json</code>, tables</td>
+</tr>
+<tr class="even">
+<td><code>report</code></td>
+<td><code>hfs.benchmark.report</code></td>
+<td><code>results/RESULTS.md</code>, <code>results/latex/*.tex</code>,
+<code>results/figures/*.png</code></td>
+</tr>
+<tr class="odd">
+<td><code>screenshots</code></td>
+<td><code>scripts/screenshots.py</code></td>
+<td><code>docs/screenshots/*.png</code></td>
+</tr>
+<tr class="even">
+<td><code>tune</code> (optional)</td>
+<td><code>scripts/tune_xgb.py</code></td>
+<td><code>results/tuning_xgb_daily.json</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="tests">Tests</h2>
+<p><code>make test</code> runs unit and integration tests on
+<strong>synthetic</strong> data only (no network): feature/label logic,
+metrics and statistical tests, alert-engine hysteresis/cooldown,
+ingestion validators, model smoke tests, and an end-to-end pipeline →
+stream → API test. <code>make lint</code> runs ruff.</p>
+<h2 id="full-scale-profile">Full-scale profile</h2>
+<p><code>make data-cds</code> (ERA5 0.25°, 1991–2025, Copernicus
+account) plus <code>make up-full</code> (Kafka + Spark via docker
+compose) is the SRS full configuration. It is scripted but was not
+executed for v0.1.0 (DEVIATIONS.md D5, D6).</p>
+</div></div></section>
+<script>
+shell('architecture', 'Architecture', 'System design, data flow, streaming contract and how this site is deployed.', '<span class="chip">v0.1.0</span><span class="chip real">HADOOP · SPARK · KAFKA EXECUTED (SINGLE NODE)</span>');
+</script></body></html>

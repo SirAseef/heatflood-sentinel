@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Model Benchmarks · HeatFlood Sentinel</title><meta name="description" content="LSTM, ConvLSTM, XGBoost, SARIMA, CNN vs persistence and climatology — leaderboards and significance tests.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/benchmark.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/benchmark.html">
+<meta property="og:title" content="Model Benchmarks · HeatFlood Sentinel"><meta property="og:description" content="LSTM, ConvLSTM, XGBoost, SARIMA, CNN vs persistence and climatology — leaderboards and significance tests.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Model Benchmarks · HeatFlood Sentinel"><meta name="twitter:description" content="LSTM, ConvLSTM, XGBoost, SARIMA, CNN vs persistence and climatology — leaderboards and significance tests."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Model Benchmarks \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/benchmark.html", "description": "LSTM, ConvLSTM, XGBoost, SARIMA, CNN vs persistence and climatology \u2014 leaderboards and significance tests.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><h2>Model roster</h2><p class="sub">Every number below is read from the project's results files (test year 2022, 20 cities pooled unless stated).</p><div id="roster"></div></div></section>
+<section class="grid"><div class="card glass span-12"><div class="controls"><label>Track <select id="track"><option value="daily">Daily — Tmax & precipitation, leads 1–7 d (RQ2 core)</option><option value="hourly">Hourly — T2m & precipitation, leads 1/6/24 h</option></select></label>
+<label>Variable <select id="var"></select></label></div>
+<h2>Skill vs lead time</h2><p class="sub">RMSE on the held-out 2022 test year, identical rows for every model.</p><div id="curve" class="chart"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Leaderboard</h2><p class="sub" id="lbsub"></p><div class="controls"><label>Lead <select id="lead"></select></label></div><div id="lb"></div></div>
+<div class="card glass span-5"><h2>Skill score vs persistence</h2><p class="sub">SS = 1 − MSE<sub>model</sub>/MSE<sub>persistence</sub> (higher is better).</p><div id="ss" class="chart"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Significance (Diebold–Mariano + block bootstrap, Holm-adjusted)</h2><p class="sub">Significant = Holm p &lt; 0.05 <b>and</b> the 95% CI of the RMSE difference excludes 0.</p><div id="sig"></div></div>
+<div class="card glass span-5"><h2>Per-region RMSE (fairness)</h2><p class="sub">Selected lead; weaker regions stay visible instead of being averaged away.</p><div id="region"></div></div></section>
+<section class="grid"><div class="card glass span-6"><h2>ConvLSTM — gridded forecasts</h2><p class="sub">2° ERA5 lattice (7×8 cells), test 2022, RMSE per lead (hours).</p><div id="grid" class="chart"></div><div id="gridtbl"></div></div>
+<div class="card glass span-6"><h2>LSTM seed robustness (daily)</h2><p class="sub">RMSE mean ± std over seeds (42, 7, 2024).</p><div id="seeds"></div><img class="figure" style="margin-top:12px" src="figures/convlstm_grid.png" alt="ConvLSTM grid forecast figure" loading="lazy"></div></section>
+<script>
+shell('benchmark', 'Model Benchmarks', 'LSTM · ConvLSTM · XGBoost · SARIMA · CNN vs persistence and climatology (RQ2).', '<span class="chip real">REAL ERA5 · TEST 2022</span>');
+(async () => {
+  const cache = {}; const get = async t => cache[t] = cache[t] || await api('/benchmarks?track=' + t);
+  const [d, h] = [await get('daily'), await get('hourly')];
+  const best = (lb, v, H, m) => lb.find(r => r.var === v && r.horizon === H && r.model === m) || {};
+  const det = (d.detection_full.results || []), dx = (hz, l, m) => det.find(r => r.hazard === hz && r.lead === l && r.model === m) || {};
+  const gr = (m, H) => d.grid.find(r => r.var === 't2m' && r.model === m && r.horizon === H) || {};
+  const R = [
+    ['LSTM', 'Sequence forecaster (daily + hourly)', `Daily Tmax RMSE d+1 ${fmt(best(d.leaderboard, 'tmax', 1, 'lstm').rmse)} °C · d+3 ${fmt(best(d.leaderboard, 'tmax', 3, 'lstm').rmse)} °C; hourly T2m +1 h ${fmt(best(h.leaderboard, 't2m', 1, 'lstm').rmse)} °C`],
+    ['ConvLSTM', 'Spatio-temporal grid forecaster (2° lattice)', `T2m RMSE +1 h ${fmt(gr('convlstm', 1).rmse)} °C vs persistence ${fmt(gr('persistence', 1).rmse)}; +6 h ${fmt(gr('convlstm', 6).rmse)} vs ${fmt(gr('persistence', 6).rmse)}`],
+    ['XGBoost', 'Gradient-boosted forecaster + calibrated detectors', `Daily Tmax RMSE d+1 ${fmt(best(d.leaderboard, 'tmax', 1, 'xgboost').rmse)} °C; heatwave CSI (1 d) ${fmt(dx('heatwave', '1d', 'xgboost').csi)}; flood-risk CSI (6 h) ${fmt(dx('flash_flood', '6h', 'xgboost').csi)}`],
+    ['SARIMA', 'Statistical baseline (Fourier seasonality)', `Daily Tmax RMSE d+1 ${fmt(best(d.leaderboard, 'tmax', 1, 'sarima').rmse)} °C · d+7 ${fmt(best(d.leaderboard, 'tmax', 7, 'sarima').rmse)} °C`],
+    ['CNN', 'Grid heatwave detector (lead 1 d)', `CSI ${fmt(d.cnn.csi)} · F1 ${fmt(d.cnn.f1)} · ROC-AUC ${fmt(d.cnn.roc_auc)} (grid rule persistence CSI ${fmt(d.cnn.rule_persistence.csi)})`],
+    ['Persistence', 'Naive baseline (tomorrow = today)', `Daily Tmax RMSE d+1 ${fmt(best(d.leaderboard, 'tmax', 1, 'persistence').rmse)} °C; heatwave rule CSI (1 d) ${fmt(dx('heatwave', '1d', 'rule_persistence').csi)}`],
+    ['Climatology', 'Calendar-day normal (train years)', `Daily Tmax RMSE ${fmt(best(d.leaderboard, 'tmax', 1, 'climatology').rmse)} °C (lead-independent)`]];
+  $('#roster').innerHTML = table(R.map(r => ({ m: r[0], role: r[1], k: r[2] })), [{ k: 'm', label: 'Model', f: m => `<b style="color:${HFS_CHARTS.MODEL_COLORS[m.toLowerCase()] || HFS_CHARTS.MODEL_COLORS.cnn_grid}">●</b> ${m}` }, { k: 'role', label: 'Role' }, { k: 'k', label: 'Key test-2022 numbers', f: v => `<span style="white-space:normal">${v}</span>` }]);
+  const vars = { daily: [['tmax', 'Daily Tmax (°C)'], ['tp', 'Daily precipitation (mm)']], hourly: [['t2m', '2 m temperature (°C)'], ['tp', 'Hourly precipitation (mm)']] };
+  async function draw() {
+    const t = $('#track').value, v = $('#var').value, b = await get(t);
+    const lb = b.leaderboard.filter(r => r.var === v), models = [...new Set(lb.map(r => r.model))];
+    HFS_CHARTS.lineChart($('#curve'), models.map(m => ({ name: m, dots: true, width: m === 'lstm' ? 2.4 : 1.6, points: lb.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 260, xfmt: x => '+' + x + (t === 'daily' ? 'd' : 'h'), ylabel: 'RMSE' });
+    const leads = [...new Set(lb.map(r => r.horizon))]; if (!$('#lead').options.length || $('#lead').dataset.t !== t + v) { $('#lead').innerHTML = leads.map(l => `<option>${l}</option>`).join(''); $('#lead').dataset.t = t + v; }
+    const L = +$('#lead').value, rows = lb.filter(r => r.horizon === L).sort((a, b) => a.rmse - b.rmse);
+    $('#lbsub').textContent = `${(rows[0]?.n ?? 0).toLocaleString()} forecast–observation pairs per model at lead +${L}${t === 'daily' ? ' d' : ' h'}.`;
+    const extra = v === 'tp' ? (t === 'daily' ? [{ k: 'csi_ge10', label: 'CSI≥10mm', num: 1, f: fmt }, { k: 'pod_ge10', label: 'POD≥10', num: 1, f: fmt }] : [{ k: 'csi_ge0.5', label: 'CSI≥0.5mm', num: 1, f: fmt }]) : [{ k: 'mape', label: 'MAPE %', num: 1, f: fmt }];
+    $('#lb').innerHTML = table(rows, [{ k: 'model', label: 'Model', f: m => `<span style="color:${HFS_CHARTS.MODEL_COLORS[m]}">●</span> ${m}` }, { k: 'rmse', label: 'RMSE', num: 1, f: fmt }, { k: 'mae', label: 'MAE', num: 1, f: fmt }, { k: 'nse', label: 'NSE', num: 1, f: x => fmt(x, 3) },
+      { k: 'ss_vs_climatology', label: 'SS clim', num: 1, f: x => fmt(x, 3) }, { k: 'rmse_extreme_top5', label: 'RMSE top-5%', num: 1, f: fmt }, ...extra], { best: (r, i) => i === 0 });
+    HFS_CHARTS.barChart($('#ss'), rows.filter(r => r.model !== 'persistence').map(r => ({ label: r.model, value: r.ss_vs_persistence, color: HFS_CHARTS.MODEL_COLORS[r.model] })), { left: 130 });
+    $('#sig').innerHTML = table(b.significance.filter(r => r.var === v), [{ k: 'horizon', label: 'Lead', num: 1 }, { k: 'model_a', label: 'A' }, { k: 'model_b', label: 'B' }, { k: 'rmse_diff_a_minus_b', label: 'ΔRMSE (A−B)', num: 1, f: x => fmt(x, 3) },
+      { k: 'ci_lo', label: '95% CI', num: 1, f: (x, r) => `[${fmt(r.ci_lo, 3)}, ${fmt(r.ci_hi, 3)}]` }, { k: 'dm_stat', label: 'DM', num: 1, f: fmt }, { k: 'p_holm', label: 'p (Holm)', num: 1, f: x => x < 1e-4 ? '<1e-4' : fmt(x, 4) },
+      { k: 'winner', label: 'Winner', f: (x, r) => r.significant ? `<b style="color:${HFS_CHARTS.MODEL_COLORS[x]}">${x}</b>` : '<span class="muted">n.s.</span>' }], { max: 380 });
+    const regs = Object.keys(rows[0] || {}).filter(k => k.startsWith('rmse_') && !k.includes('extreme'));
+    $('#region').innerHTML = table(regs.map(k => ({ region: k.replace('rmse_', ''), ...Object.fromEntries(rows.map(r => [r.model, r[k]])) })), [{ k: 'region', label: 'Region' }, ...rows.map(r => ({ k: r.model, label: r.model, num: 1, f: fmt }))]);
+    const g2 = b.grid.filter(r => r.var === (v === 'tmax' ? 't2m' : v));
+    HFS_CHARTS.lineChart($('#grid'), [...new Set(g2.map(r => r.model))].map(m => ({ name: m, dots: true, points: g2.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 220, xfmt: x => '+' + x + 'h', ylabel: 'RMSE' });
+    $('#gridtbl').innerHTML = table(g2.filter(r => r.model === 'convlstm'), [{ k: 'horizon', label: 'Lead (h)', num: 1 }, { k: 'rmse', label: 'ConvLSTM RMSE', num: 1, f: x => fmt(x, 3) }, { k: 'nse', label: 'NSE', num: 1, f: x => fmt(x, 4) }, { k: 'n', label: 'n', num: 1, f: x => x.toLocaleString() }], { max: 220 });
+    const sd = (await get('daily')).seeds.filter(r => r.var === (t === 'daily' ? v : 'tmax'));
+    $('#seeds').innerHTML = table(sd, [{ k: 'horizon', label: 'Lead (d)', num: 1 }, { k: 'mean', label: 'RMSE mean', num: 1, f: x => fmt(x, 3) }, { k: 'std', label: '± std', num: 1, f: x => fmt(x, 3) }, { k: 'count', label: 'seeds', num: 1 }]);
+  }
+  const setV = () => { $('#var').innerHTML = vars[$('#track').value].map(v => `<option value="${v[0]}">${v[1]}</option>`).join(''); };
+  $('#track').onchange = () => { setV(); draw(); }; $('#var').onchange = draw; $('#lead').onchange = draw; setV(); draw();
+})();
+</script></body></html>

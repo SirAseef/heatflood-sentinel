@@ -1,0 +1,34 @@
+/* Design tokens - SRS 5.2 (glassmorphism, dark-first, light supported) */
+:root {
+  --bg-0:#070B18; --bg-1:#0B1226; --bg-2:#131C3A;
+  --mesh-a:#22D3EE33; --mesh-b:#7C5CFF40; --mesh-c:#FF6B3D26; --mesh-d:#3B82F633;
+  --glass-1: rgba(255,255,255,0.06); --glass-2: rgba(255,255,255,0.10); --glass-3: rgba(255,255,255,0.16);
+  --glass-border: rgba(255,255,255,0.18); --glass-highlight: rgba(255,255,255,0.35);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  --blur-1: 12px; --blur-2: 20px; --blur-3: 32px; --saturate: 160%;
+  --radius-sm:12px; --radius-md:18px; --radius-lg:26px; --radius-pill:999px;
+  --text-hi:#F4F7FF; --text-mid:#B8C2DC; --text-low:#8C97B5;
+  --accent:#22D3EE; --accent-2:#7C5CFF;
+  --heat-from:#FF9A4D; --heat-to:#FF3D3D; --flood-from:#38BDF8; --flood-to:#2563EB;
+  --ok:#34D399; --advisory:#FBBF24; --watch:#FB923C; --warning:#F97316; --emergency:#EF4444;
+  --m-persistence:#9CA3AF; --m-climatology:#B08968; --m-sarima:#FACC15; --m-xgboost:#22C55E; --m-lstm:#3B82F6; --m-convlstm:#A78BFA; --m-diurnal:#64748B;
+  --font-ui:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --scrim: rgba(0,0,0,.12);
+}
+[data-theme='light'] {
+  --bg-0:#EAF0FB; --bg-1:#DDE7F8; --bg-2:#CFDDF5;
+  --glass-1: rgba(255,255,255,0.45); --glass-2: rgba(255,255,255,0.62); --glass-3: rgba(255,255,255,0.78);
+  --glass-border: rgba(255,255,255,0.85); --glass-highlight: rgba(255,255,255,1);
+  --glass-shadow: 0 8px 32px rgba(31,50,100,0.16);
+  --text-hi:#0F172A; --text-mid:#3B4763; --text-low:#56617A; --scrim: rgba(255,255,255,.2);
+}
+.glass {
+  background: var(--glass-2);
+  backdrop-filter: blur(var(--blur-2)) saturate(var(--saturate));
+  -webkit-backdrop-filter: blur(var(--blur-2)) saturate(var(--saturate));
+  border: 1px solid var(--glass-border); border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+}
+@media (prefers-reduced-transparency: reduce) { .glass { background: rgba(20,28,58,.94); backdrop-filter:none; } }
+@supports not (backdrop-filter: blur(1px)) { .glass { background: rgba(20,28,58,.92); } }

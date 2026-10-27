@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Live Alerts · HeatFlood Sentinel</title><meta name="description" content="Live heatwave and flash-flood alert map and table for 20 Pakistani cities, refreshed every 6 hours.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/live.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/live.html">
+<meta property="og:title" content="Live Alerts · HeatFlood Sentinel"><meta property="og:description" content="Live heatwave and flash-flood alert map and table for 20 Pakistani cities, refreshed every 6 hours.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Live Alerts · HeatFlood Sentinel"><meta name="twitter:description" content="Live heatwave and flash-flood alert map and table for 20 Pakistani cities, refreshed every 6 hours."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Live Alerts \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/live.html", "description": "Live heatwave and flash-flood alert map and table for 20 Pakistani cities, refreshed every 6 hours.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid" id="kpis"></section>
+<section class="grid">
+  <div class="card glass span-7"><h2>Live alert map <span id="gen" class="chip live"></span></h2><p class="sub">Marker colour = highest open alert level from the streaming alert engine run on the live feed; pulsing = Warning or above.</p><div id="map" class="chart"></div></div>
+  <div class="card glass span-5"><h2>Open alerts</h2><p class="sub">Alerts still open after the latest refresh (hysteresis + cooldown applied).</p><div id="open"></div>
+  <div class="note info" style="margin-top:14px" id="howlive"></div></div>
+</section>
+<section class="grid"><div class="card glass span-12"><h2>All 20 cities — live table</h2><p class="sub">Current = Open-Meteo current weather (15-min). Probabilities = XGBoost detectors on the latest complete day (heat, lead 1 d) / 6-h window (flood, lead 6 h). Click a city for its page.</p><div id="tbl"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Forecast heat check (next 3 PKT days)</h2><p class="sub">Bias-corrected forecast daily Tmax vs each city's calendar-day 95th percentile (train period 2015–2020); red = exceeds p95. Three consecutive exceedances = heatwave definition.</p><div id="hottable"></div></div></section>
+<section class="grid">
+  <div class="card glass span-6"><h2>NWP → ERA5 bias correction</h2><p class="sub">Per-city mean (NWP − ERA5) 2 m temperature bias over the overlap window, subtracted from forecast-model temperatures before comparison with ERA5-fitted thresholds.</p><div id="bias"></div></div>
+  <div class="card glass span-6"><h2>Update history</h2><p class="sub">Scheduled GitHub Actions runs (every 6 h, UTC 00/06/12/18).</p><div id="hist"></div></div>
+</section>
+<script>
+shell('live', 'Live Alerts', 'Real-time Open-Meteo feed → bias correction → local streaming fallback → alert engine. Refreshed every 6 h by GitHub Actions.', '<span class="chip live">LIVE · NOT ERA5</span>' + '<span class="chip">LOCAL STREAMING FALLBACK</span>');
+(async () => {
+  const [s, hist] = await Promise.all([api('/live'), api('/live/history').catch(() => [])]);
+  $('#gen').textContent = 'updated ' + pkt(s.generated_utc);
+  const hot = s.cities.slice().sort((a, b) => (b.current.temperature_2m ?? -99) - (a.current.temperature_2m ?? -99))[0];
+  const wet = s.cities.slice().sort((a, b) => b.forecast_max_rain_24h_mm - a.forecast_max_rain_24h_mm)[0];
+  const open = s.cities.flatMap(c => c.open_alerts.map(a => ({ city: c.city, ...a })));
+  $('#kpis').innerHTML = kpi('heat', 'Hottest city now', fmt(hot.current.temperature_2m, 1) + '<small> °C</small>', hot.city) + kpi('flood', 'Max 24-h rain forecast', fmt(wet.forecast_max_rain_24h_mm, 1) + '<small> mm</small>', wet.city + ' · next 72 h') +
+    kpi('violet', 'Open alerts', open.length, open.length ? 'highest: ' + LEVELS[Math.max(...open.map(a => a.level))] : 'all cities Normal') + kpi('ok', 'Events streamed', s.events_streamed.toLocaleString(), 'sink: ' + s.sink + ' · ERA5 to ' + (s.era5_latest || '–').slice(0, 10));
+  const pts = s.cities.map(c => { const l = maxLevel(c); return { name: c.city, lat: c.lat, lon: c.lon, color: LEVEL_COLORS[l], pulse: l >= 3, r: 7, title: `${c.city}: ${fmt(c.current.temperature_2m, 1)} °C · ${LEVELS[l]}` }; });
+  await HFS_CHARTS.pakistanMap($('#map'), pts);
+  const lg = document.createElement('div'); lg.className = 'legend'; lg.innerHTML = LEVELS.map((l, i) => `<span><i style="background:${LEVEL_COLORS[i]};height:10px;width:10px;border-radius:50%"></i>${l}</span>`).join(''); $('#map').appendChild(lg);
+  $('#open').innerHTML = open.length ? table(open.sort((a, b) => b.level - a.level), [{ k: 'city', label: 'City', f: cityLink }, { k: 'hazard', label: 'Hazard', f: v => v.replace('_', '-') }, { k: 'level', label: 'Level', f: sev }, { k: 'probability', label: 'p', num: 1, f: fmt }, { k: 'first_issued', label: 'Since (PKT)', f: pkt }]) : '<p class="muted">No open alerts — all 20 cities are at Normal.</p>';
+  $('#howlive').innerHTML = `<b>How this updates:</b> a scheduled GitHub Actions workflow (on the code repository) runs <code>hfs.streaming.live_feed</code> (Open-Meteo forecast + ERA5 archive, per-city NWP-to-ERA5 bias correction, the trained detectors and the alert engine via the local streaming fallback — no Kafka), and commits the new snapshot to this site's <code>gh-pages</code> branch. Forecast host: <span class="mono">${s.forecast_host || '–'}</span>. Snapshot took ${fmt(s.seconds, 1)} s.`;
+  $('#tbl').innerHTML = table(s.cities.slice().sort((a, b) => maxLevel(b) - maxLevel(a) || (b.current.temperature_2m ?? 0) - (a.current.temperature_2m ?? 0)), [{ k: 'city', label: 'City', f: cityLink }, { k: 'province', label: 'Province' },
+    { k: 'current', label: 'Now °C', num: 1, f: v => fmt(v.temperature_2m, 1) }, { k: 'current', label: 'RH %', num: 1, f: v => fmt(v.relative_humidity_2m, 0) }, { k: 'current', label: 'Rain mm', num: 1, f: v => fmt(v.precipitation, 1) },
+    { k: 'heatwave_prob_model', label: 'Heat p (1 d)', num: 1, f: fmt }, { k: 'flood_prob_model', label: 'Flood p (6 h)', num: 1, f: fmt }, { k: 'forecast_hot_days_above_p95', label: 'Hot days ≥p95', num: 1 },
+    { k: 'forecast_max_rain_24h_mm', label: 'Max 24-h rain fc', num: 1, f: v => fmt(v, 1) }, { k: 'forecast_flood_rule', label: 'Flood rule', f: v => v ? '<b style="color:var(--emergency)">YES</b>' : 'no' },
+    { k: 'open_alerts', label: 'Level', f: (v, r) => sev(maxLevel(r)) }], { max: 640 });
+  const days = s.cities[0].forecast_tmax.map(d => d.day);
+  const rows = s.cities.map(c => ({ city: c.city, ...Object.fromEntries(c.forecast_tmax.map((d, i) => ['d' + i, d])), hot: c.forecast_hot_days_above_p95 }));
+  $('#hottable').innerHTML = table(rows, [{ k: 'city', label: 'City', f: cityLink }, ...days.map((d, i) => ({ k: 'd' + i, label: d, num: 1, f: v => v ? `<span style="color:${v.tmax > v.p95 ? 'var(--emergency)' : 'inherit'}">${fmt(v.tmax, 1)}</span> <span class="muted">/ ${fmt(v.p95, 1)}</span>` : '–' })), { k: 'hot', label: 'Days ≥ p95', num: 1 }], { max: 560 });
+  const b = s.bias_correction || {}; const bc = b.daily_mean_bias_c || {};
+  $('#bias').innerHTML = table(Object.entries(bc).map(([c, v]) => ({ c, v })).sort((x, y) => y.v - x.v), [{ k: 'c', label: 'City', f: cityLink }, { k: 'v', label: 'Mean NWP − ERA5 (°C)', num: 1, f: v => (v > 0 ? '+' : '') + fmt(v) }], { max: 360 }) + `<p class="muted" style="font-size:12px">Overlap: ${(b.overlap_hours || 0).toLocaleString()} city-hours. Method: ${b.method || '–'}.</p>`;
+  $('#hist').innerHTML = table(hist.slice().reverse(), [{ k: 'generated_utc', label: 'Run (PKT)', f: pkt }, { k: 'events_streamed', label: 'Events', num: 1, f: v => v.toLocaleString() }, { k: 'open_alerts', label: 'Open', num: 1 },
+    { k: 'max_level', label: 'Max level', f: sev }, { k: 'mean_temp_c', label: 'Mean °C', num: 1, f: v => fmt(v, 1) }, { k: 'max_rain_24h_fc_mm', label: 'Max rain fc', num: 1, f: v => fmt(v, 1) }], { max: 360 });
+})();
+</script></body></html>

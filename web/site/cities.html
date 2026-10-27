@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cities · HeatFlood Sentinel</title><meta name="description" content="Twenty reference cities: live conditions and 2022 hazard statistics.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/cities.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/cities.html">
+<meta property="og:title" content="Cities · HeatFlood Sentinel"><meta property="og:description" content="Twenty reference cities: live conditions and 2022 hazard statistics.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Cities · HeatFlood Sentinel"><meta name="twitter:description" content="Twenty reference cities: live conditions and 2022 hazard statistics."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Cities \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/cities.html", "description": "Twenty reference cities: live conditions and 2022 hazard statistics.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><h2>20 reference cities <span id="gen" class="chip live"></span></h2><p class="sub">Live conditions from the latest snapshot. Each card opens the city's page.</p><div class="citygrid" id="cards"></div></div></section>
+<section class="grid"><div class="card glass span-12"><h2>Held-out 2022: hazards by city</h2><p class="sub">Labelled heatwave days and flash-flood-risk windows (ERA5, test year 2022), XGBoost hits, and alert events the streaming replay raised (level ≥ Watch, created/escalated).</p><div id="stats"></div></div></section>
+<script>
+shell('cities', 'Cities', 'Twenty reference cities across Sindh, Punjab, KP, Balochistan, GB and ICT.', '<span class="chip live">LIVE</span><span class="chip real">ERA5 2015–2022</span>');
+(async () => {
+  const [s, cities, hw, ff, al] = await Promise.all([api('/live').catch(() => null), api('/cities'), api('/detections?hazard=heatwave&lead=1d'), api('/detections?hazard=flash_flood&lead=6h'), api('/alerts?limit=100000')]);
+  if (s) $('#gen').textContent = 'updated ' + pkt(s.generated_utc);
+  const L = Object.fromEntries((s ? s.cities : []).map(c => [c.city, c]));
+  $('#cards').innerHTML = cities.map(ci => { const c = L[ci.city], l = c ? maxLevel(c) : 0;
+    return `<a class="citycard" style="text-decoration:none;color:inherit" href="${cityHref(ci.city)}"><div style="display:flex;justify-content:space-between;gap:6px"><b>${ci.city}</b>${sev(l)}</div>
+    <div class="temp">${c ? fmt(c.current.temperature_2m, 1) + '°' : '–'}</div><div class="muted" style="font-size:11.5px">${ci.province} · ${ci.lat.toFixed(2)}°N ${ci.lon.toFixed(2)}°E</div>
+    <div class="muted" style="font-size:11.5px;margin-top:6px">heat p ${c ? fmt(c.heatwave_prob_model) : '–'} · flood p ${c ? fmt(c.flood_prob_model) : '–'}</div></a>`; }).join('');
+  const agg = {}; cities.forEach(c => agg[c.city] = { city: c.city, province: c.province, hwd: 0, hwhit: 0, ffw: 0, ffhit: 0, al: 0 });
+  hw.forEach(r => { if (r.label) { agg[r.entity_id].hwd++; if (r.predicted_flag) agg[r.entity_id].hwhit++; } });
+  ff.forEach(r => { if (r.label) { agg[r.entity_id].ffw++; if (r.predicted_flag) agg[r.entity_id].ffhit++; } });
+  al.filter(a => a.level >= 2 && ['created', 'escalated'].includes(a.action)).forEach(a => agg[a.entity_id] && agg[a.entity_id].al++);
+  $('#stats').innerHTML = table(Object.values(agg).sort((a, b) => b.hwd - a.hwd), [{ k: 'city', label: 'City', f: cityLink }, { k: 'province', label: 'Province' }, { k: 'hwd', label: 'Heatwave days (label)', num: 1 },
+    { k: 'hwhit', label: 'XGB hits (1 d)', num: 1 }, { k: 'ffw', label: 'Flood-risk windows (label)', num: 1 }, { k: 'ffhit', label: 'XGB hits (6 h)', num: 1 }, { k: 'al', label: 'Replay alerts ≥ Watch', num: 1 }]);
+})();
+</script></body></html>

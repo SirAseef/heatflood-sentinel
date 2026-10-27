@@ -9,7 +9,7 @@
 <div class="card glass span-4"><h2>Coverage</h2><p class="sub">Daily rows per city.</p><div id="cov"></div></div></section>
 <section class="grid"><div class="card glass span-12"><h2>Sample rows — silver.city_daily</h2><div id="sample"></div></div></section>
 <script>
-shell('data', 'Data Explorer', 'ERA5 2015–2022 for 20 cities + a 2° grid (2015–2022): catalogue, QC, coverage and labels.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
+shell('data', 'Data Explorer', 'ERA5 feature store of the v0.1.0 models (2015–2022, 20 cities + a 2° grid; city archive since extended to 1990–2026, retraining in progress): catalogue, QC, coverage and labels.', '<span class="chip real">REAL ERA5</span><span class="chip">PMD adapter: disabled (no agreement yet)</span>');
 (async () => {
   const [cat, q, s, f] = await Promise.all([api('/data/catalog'), api('/data/quality'), api('/data/sample?n=15'), api('/pipeline/status')]);
   const fs = f.features;

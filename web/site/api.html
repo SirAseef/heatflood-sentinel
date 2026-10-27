@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>API Docs · HeatFlood Sentinel</title><meta name="description" content="Static OpenAPI view of the HeatFlood Sentinel REST API.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/api.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/api.html">
+<meta property="og:title" content="API Docs · HeatFlood Sentinel"><meta property="og:description" content="Static OpenAPI view of the HeatFlood Sentinel REST API.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="API Docs · HeatFlood Sentinel"><meta name="twitter:description" content="Static OpenAPI view of the HeatFlood Sentinel REST API."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/app.css"><link rel="stylesheet" href="styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "API Docs \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/api.html", "description": "Static OpenAPI view of the HeatFlood Sentinel REST API.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '';</script><script src="js/charts.js"></script><script src="js/app.js"></script></head><body>
+<section class="grid"><div class="card glass span-12"><div class="note"><b>Not hosted:</b> this site is static (GitHub Pages). The FastAPI service below runs locally with <code>make api</code> (http://127.0.0.1:8000, interactive docs at <code>/docs</code>). For this site, the read-only GET responses were pre-rendered to JSON with FastAPI's TestClient and are linked as <b>static mirrors</b>; POST endpoints (login, acknowledge, live refresh) and the SSE stream are not available here.</div></div></section>
+<section class="grid"><div class="card glass span-12"><h2 id="apititle">REST API</h2><p class="sub" id="apidesc"></p><div class="controls"><label>Filter <input id="q" placeholder="e.g. alerts, forecasts" style="min-width:220px"></label></div><div id="eps"></div></div></section>
+<script>
+shell('api', 'API Docs', 'Static OpenAPI view of the HeatFlood Sentinel REST API (base path /api/v1).', '<span class="chip">OpenAPI 3</span><span class="chip">NOT HOSTED · STATIC MIRRORS</span>');
+(async () => {
+  const o = await api('/openapi');
+  $('#apititle').textContent = `${o.info.title} · v${o.info.version}`; $('#apidesc').textContent = o.info.description || '';
+  const MIRROR = { '/api/v1/summary': 'summary.json', '/api/v1/live': 'live.json', '/api/v1/cities': 'cities.json', '/api/v1/alerts': 'alerts.json', '/api/v1/alerts/{alert_id}': 'alert_narratives.json',
+    '/api/v1/benchmarks': 'benchmarks_daily.json', '/api/v1/explain/global': 'explain_global.json', '/api/v1/explain/saliency': 'saliency.json', '/api/v1/models': 'models.json',
+    '/api/v1/pipeline/status': 'pipeline_status.json', '/api/v1/pipeline/metrics': 'pipeline_metrics.json', '/api/v1/scalability/results': 'scalability.json', '/api/v1/data/catalog': 'data_catalog.json',
+    '/api/v1/data/quality': 'data_quality.json', '/api/v1/data/sample': 'data_sample.json', '/api/v1/data/monthly': 'monthly.json', '/api/v1/cases': 'cases.json', '/api/v1/cases/{case_id}/replay': 'cases/heat-2022.json',
+    '/api/v1/detections': 'detections/heatwave_1d.json', '/api/v1/forecasts': 'forecasts/daily/jacobabad.json' };
+  const ref = s => s && s.$ref ? s.$ref.split('/').pop() : (s && s.type) || '';
+  const eps = Object.entries(o.paths).flatMap(([p, ops]) => Object.entries(ops).map(([verb, op]) => ({ p, verb, op })));
+  const render = () => { const q = ($('#q').value || '').toLowerCase();
+    $('#eps').innerHTML = eps.filter(e => !q || e.p.toLowerCase().includes(q) || (e.op.summary || '').toLowerCase().includes(q)).map(({ p, verb, op }) => {
+      const params = (op.parameters || []).map(x => `<tr><td class="mono">${x.name}</td><td>${x.in}</td><td>${x.required ? 'yes' : ''}</td><td class="mono">${esc(ref(x.schema) || (x.schema && x.schema.anyOf ? x.schema.anyOf.map(ref).join(' | ') : ''))}</td><td class="mono">${x.schema && x.schema.default !== undefined ? esc(JSON.stringify(x.schema.default)) : ''}</td></tr>`).join('');
+      const body = op.requestBody ? `<p>Request body: <span class="mono">${esc(ref((Object.values(op.requestBody.content || {})[0] || {}).schema))}</span></p>` : '';
+      const sec = op.security ? '<p>Requires a bearer token (role-based).</p>' : (/ack|bulletin|refresh/.test(p) ? '<p>Requires a bearer token (analyst/admin role).</p>' : '');
+      const mir = MIRROR[p] && verb === 'get' ? `<p>Static mirror: <a href="api/${MIRROR[p]}">api/${MIRROR[p]}</a></p>` : (verb === 'get' && p.includes('stream') ? '<p>Server-sent events — replayed client-side on the Home page instead.</p>' : '<p class="muted">No static mirror (needs the running API).</p>');
+      return `<details class="endpoint"><summary><span class="verb ${verb}">${verb.toUpperCase()}</span><span class="pth">${esc(p)}</span><span class="muted">${esc(op.summary || '')}</span></summary><div class="body">${op.description ? '<p>' + esc(op.description) + '</p>' : ''}
+        ${params ? `<div class="scroll dense"><table><thead><tr><th>Parameter</th><th>In</th><th>Required</th><th>Type</th><th>Default</th></tr></thead><tbody>${params}</tbody></table></div>` : '<p>No parameters.</p>'}${body}${sec}${mir}</div></details>`; }).join(''); };
+  $('#q').oninput = render; render();
+})();
+</script></body></html>

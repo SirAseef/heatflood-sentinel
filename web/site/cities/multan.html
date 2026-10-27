@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Multan · HeatFlood Sentinel</title><meta name="description" content="Multan (Punjab): live heat and flood outlook, 2022 forecasts and alert history.">
+<meta name="author" content="Aseef Ahmed"><meta name="theme-color" content="#070B18"><link rel="canonical" href="https://siraseef.github.io/heatflood-sentinel/cities/multan.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="HeatFlood Sentinel"><meta property="og:url" content="https://siraseef.github.io/heatflood-sentinel/cities/multan.html">
+<meta property="og:title" content="Multan · HeatFlood Sentinel"><meta property="og:description" content="Multan (Punjab): live heat and flood outlook, 2022 forecasts and alert history.">
+<meta property="og:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HeatFlood Sentinel — heatwave and flash-flood forecasting for Pakistan">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Multan · HeatFlood Sentinel"><meta name="twitter:description" content="Multan (Punjab): live heat and flood outlook, 2022 forecasts and alert history."><meta name="twitter:image" content="https://siraseef.github.io/heatflood-sentinel/media/og.png">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="../styles/tokens.css"><link rel="stylesheet" href="../styles/app.css"><link rel="stylesheet" href="../styles/vip.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Multan \u00b7 HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/cities/multan.html", "description": "Multan (Punjab): live heat and flood outlook, 2022 forecasts and alert history.", "isPartOf": {"@type": "WebSite", "name": "HeatFlood Sentinel", "url": "https://siraseef.github.io/heatflood-sentinel/"}, "about": {"@type": "Thesis", "name": "Scalable Big Data and Deep Learning Framework for Heatwave and Flash-Flood Forecasting and Detection in Pakistan", "author": {"@type": "Person", "name": "Aseef Ahmed"}, "inSupportOf": "MS Data Science", "sourceOrganization": {"@type": "CollegeOrUniversity", "name": "NED University of Engineering and Technology, Karachi"}}}</script>
+<script>window.HFS_BASE = '../';</script><script src="../js/charts.js"></script><script src="../js/app.js"></script></head><body data-city="Multan">
+<section class="grid"><div class="card glass span-12"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+<div class="muted" id="where"></div><div class="btnrow" id="pn"></div></div></div></section>
+<section class="grid" id="kpis"></section>
+<section class="grid"><div class="card glass span-8"><h2>Last 7 days + 72-h outlook <span class="chip live">LIVE</span></h2><p class="sub">Solid: ERA5 archive where available (≈5-day lag), else bias-corrected forecast-model analysis; dashed: 72-h forecast. Yellow line = snapshot time.</p><div id="tchart" class="chart"></div><div id="pchart" class="chart" style="margin-top:12px"></div></div>
+<div class="card glass span-4"><h2>Live hazard checks</h2><p class="sub">Same detectors and alert engine as the replay stream, plus forecast rules.</p><div id="checks"></div></div></section>
+<section class="grid"><div class="card glass span-8"><h2>Daily Tmax forecasts vs ERA5 — test year 2022</h2><div class="controls"><label>Lead <select id="lead"><option>1</option><option>2</option><option>3</option><option>5</option><option>7</option></select></label>
+<label>Window <select id="win"><option value="2022-04-01|2022-06-30">Apr–Jun 2022 (heat)</option><option value="2022-01-01|2022-12-31">Full year 2022</option><option value="2022-07-01|2022-09-30">Jul–Sep 2022</option></select></label></div><div id="fchart" class="chart"></div></div>
+<div class="card glass span-4"><h2>Model error (this city)</h2><p class="sub">Computed in the browser from the exported predictions for the selected lead and window.</p><div id="ftbl"></div></div></section>
+<section class="grid"><div class="card glass span-6"><h2>Heatwave probability, 2022</h2><p class="sub">Calibrated XGBoost P(heatwave tomorrow); shaded = labelled heatwave days.</p><div id="hw" class="chart"></div><div class="metricrow" id="hwm"></div></div>
+<div class="card glass span-6"><h2>Flash-flood-risk probability, monsoon 2022</h2><p class="sub">XGBoost P(flood-risk in next 6 h), Jul–Sep 2022; shaded = proxy-labelled windows.</p><div id="ff" class="chart"></div><div class="metricrow" id="ffm"></div></div></section>
+<section class="grid"><div class="card glass span-7"><h2>Alert history (streamed replay, Apr–Sep 2022)</h2><p class="sub">Every alert-engine event for this city with top SHAP drivers.</p><div id="alog"></div></div>
+<div class="card glass span-5"><h2>Monthly climate signal</h2><p class="sub">Mean daily Tmax (line) and monthly precipitation (bars, scaled), ERA5 2015–2022.</p><div id="monthly" class="chart"></div></div></section>
+<script>
+(async () => {
+  const CITY = document.body.dataset.city;
+  const [cities, s] = await Promise.all([api('/cities'), api('/live').catch(() => null)]);
+  const ci = cities.find(c => c.city === CITY), k = cities.indexOf(ci);
+  shell('cities', CITY, `${ci.province} · ${ci.lat.toFixed(2)}°N, ${ci.lon.toFixed(2)}°E — live outlook, 2022 test forecasts, detections and alert history.`, '<span class="chip live">LIVE</span><span class="chip real">REAL ERA5 · TEST 2022</span>');
+  const prev = cities[(k + cities.length - 1) % cities.length], next = cities[(k + 1) % cities.length];
+  $('#where').innerHTML = `<a href="${BASE}cities.html">All cities</a> / <b style="color:var(--text-hi)">${CITY}</b> · ERA5 0.25° cell nearest ${ci.lat.toFixed(2)}°N ${ci.lon.toFixed(2)}°E`;
+  $('#pn').innerHTML = `<a class="btn" href="${cityHref(prev.city)}">← ${prev.city}</a><a class="btn" href="${cityHref(next.city)}">${next.city} →</a>`;
+  const c = s && s.cities.find(x => x.city === CITY);
+  if (c) {
+    const l = maxLevel(c);
+    $('#kpis').innerHTML = kpi('heat', 'Temperature now', fmt(c.current.temperature_2m, 1) + '<small> °C</small>', 'RH ' + fmt(c.current.relative_humidity_2m, 0) + '% · wind ' + fmt(c.current.wind_speed_10m, 0) + ' km/h') +
+      kpi('heat', 'Heatwave prob.', fmt(c.heatwave_prob_model), 'XGBoost, lead 1 d · day ' + (c.heatwave_eval_day || '–')) + kpi('flood', 'Flood-risk prob.', fmt(c.flood_prob_model), 'XGBoost, lead 6 h') +
+      kpi(l >= 2 ? 'heat' : 'ok', 'Alert level', LEVELS[l], 'snapshot ' + pkt(s.generated_utc));
+    const n = c.series.n_obs, T = c.series.time.map((t, i) => [t, c.series.t2m[i]]), P = c.series.time.map((t, i) => [t, c.series.tp[i]]), now = c.series.time[n - 1];
+    HFS_CHARTS.lineChart($('#tchart'), [{ name: 'obs', label: '2 m temperature (obs/analysis)', color: '#FF9A4D', points: T.slice(0, n) }, { name: 'fc', label: 'forecast (72 h)', color: '#FF3D3D', dash: '5 4', points: T.slice(n - 1) }], { height: 220, vline: now, ylabel: '°C' });
+    HFS_CHARTS.lineChart($('#pchart'), [{ name: 'p', type: 'bar', label: 'hourly precipitation (mm)', color: '#38BDF8', points: P }], { height: 130, vline: now, ymin: 0, ylabel: 'mm/h' });
+    const al = c.open_alerts.length ? c.open_alerts.map(a => `${sev(a.level)} ${a.hazard.replace('_', '-')} since ${pkt(a.first_issued)}`).join('<br>') : sev(0) + ' no open alerts';
+    $('#checks').innerHTML = `<div class="metricrow" style="flex-direction:column">
+      <div class="metric">Forecast hot days ≥ p95 (72 h)<b>${c.forecast_hot_days_above_p95}</b></div>
+      ${c.forecast_tmax.map(d => `<div class="metric">${d.day} Tmax / p95<b style="color:${d.tmax > d.p95 ? 'var(--emergency)' : 'inherit'}">${fmt(d.tmax, 1)} / ${fmt(d.p95, 1)} °C</b></div>`).join('')}
+      <div class="metric">Forecast max rain 6 h / 24 h<b>${fmt(c.forecast_max_rain_6h_mm, 1)} / ${fmt(c.forecast_max_rain_24h_mm, 1)} mm</b></div>
+      <div class="metric">Flood thresholds 6 h / 24 h<b>${fmt(Math.max(50, c.flood_thresholds.tp6_p99), 1)} / ${fmt(c.flood_thresholds.tp24_p995, 1)} mm</b></div>
+      <div class="metric">Forecast flood rule<b>${c.forecast_flood_rule ? 'TRIGGERED' : 'no'}</b></div>
+      <div class="metric">NWP − ERA5 bias removed<b>${fmt((s.bias_correction?.daily_mean_bias_c || {})[CITY])} °C</b></div></div><div style="margin-top:8px">${al}</div>`;
+  } else $('#kpis').innerHTML = '<p class="muted">Live snapshot unavailable.</p>';
+  const rmse = a => Math.sqrt(a.reduce((s, r) => s + (r.yhat - r.y) ** 2, 0) / a.length), mae = a => a.reduce((s, r) => s + Math.abs(r.yhat - r.y), 0) / a.length;
+  const nse = a => { const m = a.reduce((s, r) => s + r.y, 0) / a.length; return 1 - a.reduce((s, r) => s + (r.y - r.yhat) ** 2, 0) / a.reduce((s, r) => s + (r.y - m) ** 2, 0); };
+  const drawF = async () => { const [f, t] = $('#win').value.split('|');
+    const d = await api(`/forecasts?entity=${encodeURIComponent(CITY)}&variable=tmax&horizon=${$('#lead').value}&track=daily&from=${f}&to=${t}`), any = Object.values(d)[0];
+    HFS_CHARTS.lineChart($('#fchart'), [{ name: 'observed', label: 'Observed (ERA5)', color: '#F4F7FF', width: 2.2, points: any.map(r => [r.target_time, r.y]) }].concat(Object.entries(d).map(([m, a]) => ({ name: m, label: m, width: m === 'lstm' ? 2 : 1.3, dash: m === 'climatology' ? '4 3' : '', points: a.map(r => [r.target_time, r.yhat]) }))), { height: 280, ylabel: '°C' });
+    $('#ftbl').innerHTML = table(Object.entries(d).map(([m, a]) => ({ model: m, rmse: rmse(a), mae: mae(a), nse: nse(a), n: a.length })).sort((a, b) => a.rmse - b.rmse), [{ k: 'model', label: 'Model' }, { k: 'rmse', label: 'RMSE', num: 1, f: fmt }, { k: 'mae', label: 'MAE', num: 1, f: fmt }, { k: 'nse', label: 'NSE', num: 1, f: v => fmt(v, 3) }, { k: 'n', label: 'n', num: 1 }], { best: (r, i) => i === 0 }); };
+  $('#lead').onchange = drawF; $('#win').onchange = drawF; drawF();
+  const bands = d => { const b = []; let st = null; d.forEach((r, i) => { if (r.label && st === null) st = r.time; if ((!r.label || i === d.length - 1) && st !== null) { b.push([st, r.time, '#ef444433']); st = null; } }); return b; };
+  const score = (d, el) => { const tp = d.filter(r => r.label && r.predicted_flag).length, fn = d.filter(r => r.label && !r.predicted_flag).length, fp = d.filter(r => !r.label && r.predicted_flag).length;
+    $(el).innerHTML = `<div class="metric">Events<b>${tp + fn}</b></div><div class="metric">Hits<b>${tp}</b></div><div class="metric">Misses<b>${fn}</b></div><div class="metric">False alarms<b>${fp}</b></div><div class="metric">CSI<b>${tp + fn + fp ? fmt(tp / (tp + fn + fp)) : '–'}</b></div>`; };
+  const hw = await api(`/detections?hazard=heatwave&lead=1d&entity=${encodeURIComponent(CITY)}`);
+  HFS_CHARTS.lineChart($('#hw'), [{ name: 'p', label: 'P(heatwave tomorrow)', color: '#FF9A4D', width: 2, points: hw.map(r => [r.time, r.probability]) }], { height: 220, ymin: 0, ymax: 1, bands: bands(hw) }); score(hw, '#hwm');
+  const ff = (await api(`/detections?hazard=flash_flood&lead=6h&entity=${encodeURIComponent(CITY)}`)).filter(r => r.time >= '2022-07-01' && r.time < '2022-10-01');
+  HFS_CHARTS.lineChart($('#ff'), [{ name: 'p', label: 'P(flood-risk next 6 h)', color: '#38BDF8', width: 1.6, points: ff.map(r => [r.time, r.probability]) }], { height: 220, ymin: 0, ymax: 1, bands: bands(ff) }); score(ff, '#ffm');
+  const al = await api(`/alerts?entity=${encodeURIComponent(CITY)}&limit=100000`);
+  $('#alog').innerHTML = al.length ? table(al.slice().reverse(), [{ k: 'issue_time', label: 'Time (UTC)', f: v => `<span class="mono">${v.slice(0, 16).replace('T', ' ')}</span>` }, { k: 'hazard', label: 'Hazard', f: v => v.replace('_', '-') }, { k: 'level', label: 'Level', f: sev }, { k: 'action', label: 'Action' }, { k: 'probability', label: 'p', num: 1, f: fmt }, { k: 'drivers', label: 'Top drivers', f: v => (v || []).slice(0, 3).map(d => d.feature).join(', ') }], { max: 380 }) : '<p class="muted">The replay raised no alerts for this city.</p>';
+  const m = await api('/data/monthly?entity=' + encodeURIComponent(CITY)), sc = Math.max(...m.map(r => r.tp)) / Math.max(...m.map(r => r.tmax)) || 1;
+  HFS_CHARTS.lineChart($('#monthly'), [{ name: 'tp', type: 'bar', label: `precip. (÷${sc.toFixed(1)})`, color: '#38BDF8', points: m.map(r => [r.month + '-15', r.tp / sc]) }, { name: 'tmax', label: 'mean Tmax °C', color: '#FF9A4D', width: 2, points: m.map(r => [r.month + '-15', r.tmax]) }], { height: 240, ymin: 0 });
+})();
+</script></body></html>
