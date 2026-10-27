@@ -46,7 +46,7 @@ def main() -> None:
     vtt = "WEBVTT\n\n" + re.sub(r"(\d\d:\d\d:\d\d),(\d\d\d)", r"\1.\2", srt.replace("\r", ""))
     (MEDIA / "HeatFlood_Sentinel_Demo.vtt").write_text(vtt)
     thumb = Image.open(CODE / "docs/demo/thumb_1.png").convert("RGB")
-    thumb.save(MEDIA / "demo_poster.jpg", quality=86, optimize=True, progressive=True)
+    Image.open(CODE / "docs/demo/thumb_2.png").convert("RGB").save(MEDIA / "demo_poster.jpg", quality=86, optimize=True, progressive=True)
     # Open Graph card 1200x630 from the title-card thumbnail (already carries title, author, NED crest)
     og = thumb.resize((1200, 675), Image.LANCZOS).crop((0, 22, 1200, 652))
     og.convert("RGB").save(MEDIA / "og.png", optimize=True)

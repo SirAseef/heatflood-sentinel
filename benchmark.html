@@ -58,7 +58,7 @@ shell('benchmark', 'Model Benchmarks', 'LSTM · ConvLSTM · XGBoost · SARIMA ·
     const regs = Object.keys(rows[0] || {}).filter(k => k.startsWith('rmse_') && !k.includes('extreme'));
     $('#region').innerHTML = table(regs.map(k => ({ region: k.replace('rmse_', ''), ...Object.fromEntries(rows.map(r => [r.model, r[k]])) })), [{ k: 'region', label: 'Region' }, ...rows.map(r => ({ k: r.model, label: r.model, num: 1, f: fmt }))]);
     const g2 = b.grid.filter(r => r.var === (v === 'tmax' ? 't2m' : v));
-    HFS_CHARTS.lineChart($('#grid'), [...new Set(g2.map(r => r.model))].map(m => ({ name: m, dots: true, points: g2.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 220, xfmt: x => '+' + x + 'h', ylabel: 'RMSE' });
+    HFS_CHARTS.lineChart($('#grid'), [...new Set(g2.map(r => r.model))].map(m => ({ name: m, dots: true, points: g2.filter(r => r.model === m).map(r => [r.horizon, r.rmse]) })), { time: false, height: 220, xfmt: x => '+' + (+(+x).toFixed(1)) + 'h', ylabel: 'RMSE' });
     $('#gridtbl').innerHTML = table(g2.filter(r => r.model === 'convlstm'), [{ k: 'horizon', label: 'Lead (h)', num: 1 }, { k: 'rmse', label: 'ConvLSTM RMSE', num: 1, f: x => fmt(x, 3) }, { k: 'nse', label: 'NSE', num: 1, f: x => fmt(x, 4) }, { k: 'n', label: 'n', num: 1, f: x => x.toLocaleString() }], { max: 220 });
     const sd = (await get('daily')).seeds.filter(r => r.var === (t === 'daily' ? v : 'tmax'));
     $('#seeds').innerHTML = table(sd, [{ k: 'horizon', label: 'Lead (d)', num: 1 }, { k: 'mean', label: 'RMSE mean', num: 1, f: x => fmt(x, 3) }, { k: 'std', label: '± std', num: 1, f: x => fmt(x, 3) }, { k: 'count', label: 'seeds', num: 1 }]);

@@ -35,7 +35,7 @@ const RETRAIN_PAGES = new Set(['forecast', 'heatwave', 'flood', 'benchmark', 'ex
 const RETRAIN_HTML = '<div class="note retrain" role="note"><b>Model results: release v0.1.0.</b> Metrics on this page come from models trained on ERA5 2015–2020 (validation 2021, held-out test 2022). The city archive has since been extended to <b>1990-01-01 → 2026-10-19</b> (20 cities, 6,451,680 hourly rows) and <b>retraining on 1990–2026 is in progress</b>; updated metrics will be inserted here when that run is complete.</div>';
 function retrainNote(sel) { const el = typeof sel === 'string' ? document.querySelector(sel) : sel; if (el) el.outerHTML = `<section class="grid"><div class="span-12">${RETRAIN_HTML}</div></section>`; }
 const LEVELS = ['Normal', 'Advisory', 'Watch', 'Warning', 'Emergency'];
-const LEVEL_COLORS = ['#34D399', '#FBBF24', '#FB923C', '#F97316', '#EF4444'];
+const LEVEL_COLORS = ['#34D399', '#FBBF24', '#FB923C', '#EF4444', '#9F1239'];  /* Warning red vs Watch orange: distinct hues */
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const cityHref = name => BASE + 'cities/' + slug(name) + '.html';
 
