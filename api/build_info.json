@@ -3,5 +3,5 @@
  "code_release": "v0.1.0",
  "code_commit": "76ad62dfa3ae7797282daccc4a67f2b3a4db8ef8",
  "static_export": "tools/build_static.py (FastAPI TestClient responses)",
- "live_updated_utc": "2026-10-28T22:40:53+00:00"
+ "live_updated_utc": "2026-10-29T05:56:33+00:00"
 }
