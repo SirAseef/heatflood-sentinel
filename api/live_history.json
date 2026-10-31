@@ -245,5 +245,18 @@
 "mean_temp_c": 18.33,
 "max_rain_24h_fc_mm": 9.0,
 "run": "Live site update run 41138139071"
+},
+{
+"generated_utc": "2026-10-31T05:53:42.072926+00:00",
+"events_streamed": 19320,
+"era5_latest": "2026-10-25 23:00:00",
+"forecast_host": "https://api.open-meteo.com/v1/forecast",
+"open_alerts": 5,
+"max_level": 2,
+"hottest_city": "Karachi",
+"hottest_c": 32.7,
+"mean_temp_c": 26.2,
+"max_rain_24h_fc_mm": 11.3,
+"run": "Live site update run 41174297542"
 }
 ]
