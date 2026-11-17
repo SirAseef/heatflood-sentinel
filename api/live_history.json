@@ -752,5 +752,18 @@
 "mean_temp_c": 13.73,
 "max_rain_24h_fc_mm": 0.0,
 "run": "Live site update run 43968041562"
+},
+{
+"generated_utc": "2026-11-17T08:07:07.011899+00:00",
+"events_streamed": 19380,
+"era5_latest": "2026-11-11 23:00:00",
+"forecast_host": "https://previous-runs-api.open-meteo.com/v1/forecast",
+"open_alerts": 9,
+"max_level": 3,
+"hottest_city": "Hyderabad",
+"hottest_c": 31.8,
+"mean_temp_c": 24.48,
+"max_rain_24h_fc_mm": 0.0,
+"run": "Live site update run 44043254477"
 }
 ]
