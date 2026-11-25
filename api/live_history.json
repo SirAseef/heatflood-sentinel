@@ -973,5 +973,18 @@
 "mean_temp_c": 25.05,
 "max_rain_24h_fc_mm": 0.0,
 "run": "Live site update run 45578922129"
+},
+{
+"generated_utc": "2026-11-25T21:47:41.834643+00:00",
+"events_streamed": 19640,
+"era5_latest": "2026-11-19 23:00:00",
+"forecast_host": "https://api.open-meteo.com/v1/forecast",
+"open_alerts": 14,
+"max_level": 2,
+"hottest_city": "Gwadar",
+"hottest_c": 23.0,
+"mean_temp_c": 14.12,
+"max_rain_24h_fc_mm": 0.0,
+"run": "Live site update run 45707382476"
 }
 ]
